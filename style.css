@@ -1,0 +1,81 @@
+/* Dark mode styles */
+
+td.day {
+    min-width: 34px;
+    line-height: 20px;
+}
+
+.datepicker td,
+th {
+    text-align: center;
+    padding: 3px 6px;
+    font-size: 14px;
+}
+
+.datepicker table {
+    border-collapse: separate;
+    border-spacing: 10px 5px;
+}
+
+.datepicker {
+    min-width: 5px;
+}
+
+.datepicker table tr td span {
+    line-height: 40px;
+    height: 40px;
+}
+
+[data-bs-theme="light"] {
+    /* Today selection */
+    .datepicker table tr td.today,
+    .datepicker table tr td.today:hover,
+    .datepicker table tr td.today.disabled {
+        background-color: var(--bs-yellow-300);
+        background-image: none;
+        color: white;
+    }
+
+    /* Selected */
+    .datepicker table tr td.active.active,
+    .datepicker td.active,
+    .datepicker table tr td span.active.active,
+    .datepicker table tr td span.focused {
+        background-image: none;
+        background-color: var(--bs-navy-200);
+        color: white;
+    }
+}
+
+[data-bs-theme="dark"] {
+    /* Hover over */
+    .datepicker table tr td.day.focused,
+    .datepicker table tr td.day:hover,
+    .datepicker tfoot tr th:hover,
+    .datepicker table tr td span.focused,
+    .datepicker table tr td span:hover,
+    .datepicker-switch:hover,
+    .datepicker .next:hover,
+    .datepicker .prev:hover {
+        background-color: var(--bs-secondary-hover-bg);
+        color: var(--bs-lightgray-500) !important;
+    }
+
+    /* Today selection */
+    .datepicker table tr td.today,
+    .datepicker table tr td.today:hover,
+    .datepicker table tr td.today.disabled {
+        background-color: var(--bs-indigo-300);
+        background-image: none;
+        color: white;
+    }
+
+    /* Selected */
+    .datepicker table tr td.active.active,
+    .datepicker td.active,
+    .datepicker table tr td span.active.active,
+    .datepicker table tr td span.focused {
+        background-image: none;
+        background-color: var(--bs-primary-600);
+    }
+}
