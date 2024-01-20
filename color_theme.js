@@ -67,18 +67,18 @@
 	});
 })();
 
-let defaultFlavortext = "Light/Dark<br />Mode";
-let darkFlavortext = "Wish You<br />Were Here";
-let lightFlavortext = "Day 3<br />1:3";
+let defaultFlavorText = "Light/Dark<br />Mode";
+let darkFlavorText = "Wish You<br />Were Here";
+let lightFlavorText = "Day 3<br />1:3";
 
 document.addEventListener("DOMContentLoaded", function () {
 	var rootPreference = document.documentElement.getAttribute("data-bs-theme");
 	if (rootPreference === "dark" || rootPreference === null) {
-		document.getElementById("colorToggle").innerHTML = lightFlavortext;
+		document.getElementById("colorToggle").innerHTML = lightFlavorText;
 	} else if (rootPreference === "light" || rootPreference === null) {
-		document.getElementById("colorToggle").innerHTML = darkFlavortext;
+		document.getElementById("colorToggle").innerHTML = darkFlavorText;
 	} else {
-		document.getElementById("colorToggle").innerHTML = defaultFlavortext;
+		document.getElementById("colorToggle").innerHTML = defaultFlavorText;
 	}
 });
 
@@ -122,11 +122,11 @@ function toggleDarkMode() {
 	var rootPreference = document.documentElement.getAttribute("data-bs-theme");
 	if (rootPreference === "light" || rootPreference === null) {
 		document.documentElement.setAttribute("data-bs-theme", "dark");
-		$("#colorToggle").html(lightFlavortext);
+		$("#colorToggle").html(lightFlavorText);
 		setCookie("halfmoonColorMode", "dark", 365);
 	} else {
 		document.documentElement.setAttribute("data-bs-theme", "light");
-		$("#colorToggle").html(darkFlavortext);
+		$("#colorToggle").html(darkFlavorText);
 		setCookie("halfmoonColorMode", "light", 365);
 	}
 }
