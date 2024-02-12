@@ -57,7 +57,7 @@ $(function () {
 			if (val === null || val.match(/^ *$/) !== null) {
 				$(this).removeClass("is-invalid");
 				$(this).removeClass("is-valid");
-				$("#calculateDateText").text("");
+				$("#calculateDateText").html("");
 			}
 		});
 
@@ -68,7 +68,7 @@ $(function () {
 			if (val === null || val.match(/^ *$/) !== null) {
 				$(this).removeClass("is-invalid");
 				$(this).removeClass("is-valid");
-				$("#estimatedDueDateText").text("");
+				$("#estimatedDueDateText").html("");
 			}
 		});
 
@@ -311,7 +311,7 @@ $(function () {
 
 				$("#gestationalAge").val(`${Math.floor(GAInDays / 7)} weeks ${Math.round(GAInDays % 7)} days`);
 
-				GAFormValidate($("#gestationalAge").val());
+				updateGestationalAge($("#gestationalAge").val());
 			}
 			// UPDATE At this date
 			else if (isGestationalAgeValid && isExpectedDueDateValid && idOfUpdate != "#dateFromDatepicker" && selectedValue == "option2") {
@@ -328,10 +328,10 @@ $(function () {
 	function updateLabels(validatedDate, textId, textPrefix) {
 		if (validatedDate.isValid()) {
 			var formattedDate = validatedDate.format("DD/MM/YYYY");
-			$(textId).text(`${textPrefix}: ${formattedDate}`);
+			$(textId).html(`${textPrefix}: ${formattedDate}`);
 			return;
 		} else {
-			$(textId).text("");
+			$(textId).html("");
 			return;
 		}
 	}
@@ -378,17 +378,38 @@ $(function () {
 		}
 	}
 
+	function updateGestationalAge(input) {
+		GAFormValidate(input);
+		if ((input === "") | (textToGestationalAge(input) == null)) {
+			$("#gestationalAgeText").html(``);
+			return;
+		}
+
+		converted = textToGestationalAge(input);
+
+		$("#gestationalAgeText").html(`Gestational Age: ${converted[0]}+${converted[1]}/40`);
+	}
+
 	$("#gestationalAge").on("input", function () {
 		input = $(this).val();
 
 		calculate("#gestationalAge", input);
 
-		GAFormValidate(input);
-		if ((input === "") | (textToGestationalAge(input) == null)) {
-			$("#gestationalAgeText").text(``);
-			return;
-		}
+		updateGestationalAge(input);
+	});
 
-		$("#gestationalAgeText").html(`Input: ${input}<br>Output: ${textToGestationalAge(input)}`);
+	$("#estimatedDueDateText").on("click", function () {
+		var text = $(this).text();
+		navigator.clipboard.writeText(text);
+	});
+
+	$("#calculateDateText").on("click", function () {
+		var text = $(this).text();
+		navigator.clipboard.writeText(text);
+	});
+
+	$("#gestationalAgeText").on("click", function () {
+		var text = $(this).text();
+		navigator.clipboard.writeText(text);
 	});
 });
