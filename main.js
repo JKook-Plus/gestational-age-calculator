@@ -398,17 +398,35 @@ $(function () {
 		updateGestationalAge(input);
 	});
 
-	$("#estimatedDueDateText").on("click", function () {
-		var text = $(this).text();
-		navigator.clipboard.writeText(text);
+	$(document).ready(function () {
+		function checkButton() {
+			$("#estimatedDueDateText, #calculateDateText, #gestationalAgeText").each(function () {
+				var button = $(this);
+				if (button.text().trim() === "") {
+					button.addClass("notClickable");
+				} else {
+					button.removeClass("notClickable");
+				}
+			});
+		}
+
+		checkButton(); // Check on page load
+
+		// Create a new MutationObserver instance
+		var observer = new MutationObserver(function () {
+			checkButton();
+		});
+
+		// Setup the observer to listen for changes in the subtree of all button elements
+		var targetNodes = document.querySelectorAll("#estimatedDueDateText, #calculateDateText, #gestationalAgeText");
+
+		targetNodes.forEach(function (node) {
+			var config = { childList: true, subtree: true };
+			observer.observe(node, config);
+		});
 	});
 
-	$("#calculateDateText").on("click", function () {
-		var text = $(this).text();
-		navigator.clipboard.writeText(text);
-	});
-
-	$("#gestationalAgeText").on("click", function () {
+	$(document).on("click", ".clipboard-btn", function () {
 		var text = $(this).text();
 		navigator.clipboard.writeText(text);
 	});
