@@ -1,5 +1,10 @@
 /* Dark mode styles */
 
+.notClickable {
+    pointer-events: none;
+    opacity: 0;
+}
+
 td.day {
     min-width: 34px;
     line-height: 20px;
@@ -45,6 +50,10 @@ th {
         background-color: var(--bs-navy-200);
         color: white;
     }
+
+    .logo {
+        fill: black;
+    }
 }
 
 [data-bs-theme="dark"] {
@@ -77,5 +86,9 @@ th {
     .datepicker table tr td span.focused {
         background-image: none;
         background-color: var(--bs-primary-600);
+    }
+
+    .logo {
+        fill: white;
     }
 }
