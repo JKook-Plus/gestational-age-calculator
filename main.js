@@ -332,7 +332,7 @@ $(function () {
 			$(textId).html(`${textPrefix}: ${formattedDate}`);
 
 			if (textId == "#estimated-due-date-text"){
-				var formattedDate = validatedDate.format("DD MMM YYYY");
+				var formattedDate = validatedDate.format("MMMM DD YYYY");
 				$("#estimated-due-date-word-text").html(`${formattedDate}`);
 			}
 			return;
