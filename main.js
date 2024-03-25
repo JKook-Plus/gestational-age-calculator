@@ -6,13 +6,13 @@ $(function () {
 				validatedDate = validateDate(date);
 				dateFormValidate(validatedDate, date, "#EDDDatepicker");
 				calculate("#EDDDatepicker", validatedDate);
-				return customToDisplay(validatedDate, format, language, "#estimatedDueDateText", "Estimated Due Date (EDD)");
+				return customToDisplay(validatedDate, format, language, "#estimated-due-date-text", "Estimated Due Date (EDD)");
 			},
 			toValue: function (date, format, language) {
 				validatedDate = validateDate(date);
 				dateFormValidate(validatedDate, date, "#EDDDatepicker");
 				calculate("#EDDDatepicker", validatedDate);
-				return customToValue(validatedDate, format, language, "#estimatedDueDateText", "Estimated Due Date (EDD)");
+				return customToValue(validatedDate, format, language, "#estimated-due-date-text", "Estimated Due Date (EDD)");
 			},
 		},
 		autoclose: true,
@@ -68,7 +68,8 @@ $(function () {
 			if (val === null || val.match(/^ *$/) !== null) {
 				$(this).removeClass("is-invalid");
 				$(this).removeClass("is-valid");
-				$("#estimatedDueDateText").html("");
+				$("#estimated-due-date-text").html("");
+				$("#estimated-due-date-word-text").html("");
 			}
 		});
 
@@ -329,8 +330,16 @@ $(function () {
 		if (validatedDate.isValid()) {
 			var formattedDate = validatedDate.format("DD/MM/YYYY");
 			$(textId).html(`${textPrefix}: ${formattedDate}`);
+
+			if (textId == "#estimated-due-date-text"){
+				var formattedDate = validatedDate.format("DD MMM YYYY");
+				$("#estimated-due-date-word-text").html(`${formattedDate}`);
+			}
 			return;
 		} else {
+			if (textId == "#estimated-due-date-text"){
+				$("#estimated-due-date-word-text").html("");
+			}
 			$(textId).html("");
 			return;
 		}
@@ -400,7 +409,7 @@ $(function () {
 
 	$(document).ready(function () {
 		function checkButton() {
-			$("#estimatedDueDateText, #calculateDateText, #gestationalAgeText").each(function () {
+			$("#estimated-due-date-text, #estimated-due-date-word-text, #calculateDateText, #gestationalAgeText").each(function () {
 				var button = $(this);
 				if (button.text().trim() === "") {
 					button.addClass("notClickable");
@@ -418,7 +427,7 @@ $(function () {
 		});
 
 		// Setup the observer to listen for changes in the subtree of all button elements
-		var targetNodes = document.querySelectorAll("#estimatedDueDateText, #calculateDateText, #gestationalAgeText");
+		var targetNodes = document.querySelectorAll("#estimated-due-date-text, #estimated-due-date-word-text, #calculateDateText, #gestationalAgeText");
 
 		targetNodes.forEach(function (node) {
 			var config = { childList: true, subtree: true };
