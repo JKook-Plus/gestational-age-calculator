@@ -99,6 +99,7 @@ $(function () {
 			"MMM DD, YYYY", // Jul 03, 2024
 			"MMM D, YYYY", // Jul 3, 2024
 			"DD MMMM YYYY", // 03 July 2024
+			"DD MMMM", // 03 July
 			"D MMMM YYYY", // 3 July 2024
 			"DD MMM YYYY", // 03 Jul 2024
 			"DD MMM", // 03 Jul
@@ -331,13 +332,13 @@ $(function () {
 			var formattedDate = validatedDate.format("DD/MM/YYYY");
 			$(textId).html(`${textPrefix}: ${formattedDate}`);
 
-			if (textId == "#estimated-due-date-text"){
+			if (textId == "#estimated-due-date-text") {
 				var formattedDate = validatedDate.format("MMMM DD YYYY");
 				$("#estimated-due-date-word-text").html(`${formattedDate}`);
 			}
 			return;
 		} else {
-			if (textId == "#estimated-due-date-text"){
+			if (textId == "#estimated-due-date-text") {
 				$("#estimated-due-date-word-text").html("");
 			}
 			$(textId).html("");
