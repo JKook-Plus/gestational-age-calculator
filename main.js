@@ -1,5 +1,6 @@
+// Run on load
 $(function () {
-	// run on load
+	// Config for Expected Due Date Datepicker
 	$("#EDDDatepicker").datepicker({
 		format: {
 			toDisplay: function (date, format, language) {
@@ -25,6 +26,7 @@ $(function () {
 		orientation: "left",
 	});
 
+	// Config for the Date From Datepicker
 	$("#dateFromDatepicker").datepicker({
 		format: {
 			toDisplay: function (date, format, language) {
@@ -35,8 +37,15 @@ $(function () {
 			},
 			toValue: function (date, format, language) {
 				validatedDate = validateDate(date);
+				// console.log(`1 getDate: ${$("#dateFromDatepicker").datepicker("getDate")}, ${validatedDate}`);
+				// console.log(`1 val: ${$("#dateFromDatepicker").datepicker("getValue").val()}, ${validatedDate}`);
 				dateFormValidate(validatedDate, date, "#dateFromDatepicker");
+				// console.log(`2 getDate: ${$("#dateFromDatepicker").datepicker("getDate")}, ${validatedDate}`);
+				// console.log(`2 val: ${$("#dateFromDatepicker").datepicker("getValue").val()}, ${validatedDate}`);
 				calculate("#dateFromDatepicker", validatedDate);
+
+				// console.log(`3 getDate: ${$("#dateFromDatepicker").datepicker("getDate")}, ${validatedDate}`);
+				// console.log(`3 val: ${$("#dateFromDatepicker").datepicker("getValue").val()}, ${validatedDate}`);
 				return customToValue(validatedDate, format, language, "#calculateDateText", "Calculate from date");
 			},
 		},
@@ -50,17 +59,7 @@ $(function () {
 		orientation: "left",
 	});
 
-	$("#dateFromDatepicker")
-		.datepicker()
-		.on("input", function () {
-			val = $(this).datepicker("getValue").val();
-			if (val === null || val.match(/^ *$/) !== null) {
-				$(this).removeClass("is-invalid");
-				$(this).removeClass("is-valid");
-				$("#calculateDateText").html("");
-			}
-		});
-
+	// For setting the outline color of the Expected Due Date Datepicker
 	$("#EDDDatepicker")
 		.datepicker()
 		.on("input", function () {
@@ -73,6 +72,19 @@ $(function () {
 			}
 		});
 
+	// For setting the outline color of the Date From Datepicker
+	$("#dateFromDatepicker")
+		.datepicker()
+		.on("input", function () {
+			val = $(this).datepicker("getValue").val();
+			if (val === null || val.match(/^ *$/) !== null) {
+				$(this).removeClass("is-invalid");
+				$(this).removeClass("is-valid");
+				$("#calculateDateText").html("");
+			}
+		});
+
+	// Checks to see if the given date is a valid date or in the format "t+3"
 	function validateDate(userInput) {
 		var validDateFormats = [
 			"DD/MM/YYYY", // 03/07/2024
@@ -158,18 +170,22 @@ $(function () {
 			var matchWays = userInput.match(/w\+(\d+)/i);
 			var matchMonths = userInput.match(/m\+(\d+)/i);
 			var matchYears = userInput.match(/y\+(\d+)/i);
+			// For the format "t+3"
 			if (matchDays) {
 				var days = matchDays[1];
 				return moment.utc().add(days, "days");
 			}
+			// For the format "w+3"
 			if (matchWays) {
 				var weeks = matchWays[1];
 				return moment.utc().add(weeks, "weeks");
 			}
+			// For the format "m+3"
 			if (matchMonths) {
 				var months = matchMonths[1];
 				return moment.utc().add(months, "months");
 			}
+			// For the format "y+3"
 			if (matchYears) {
 				var years = matchYears[1];
 				return moment.utc().add(years, "years");
@@ -181,6 +197,7 @@ $(function () {
 		return parsedDate;
 	}
 
+	// Checks to see if the date input field is; not a string, empty or whitespace
 	function dateFormValidate(validatedDate, date, datepickerID) {
 		if (typeof date === "string" || date instanceof String) {
 			if (date.replace(/\s/g, "") == "") {
@@ -202,6 +219,7 @@ $(function () {
 		}
 	}
 
+	// Checks to see if the GA input field is valid
 	function GAFormValidate(input) {
 		GAform = $("#gestationalAge");
 		if (input != "" && input != null) {
@@ -221,37 +239,44 @@ $(function () {
 		}
 	}
 
+	// For Datepicker setting the actual value it returns
 	function customToValue(validatedDate, format, language, textId, textPrefix) {
 		updateLabels(validatedDate, textId, textPrefix);
 		if (validatedDate.isValid()) {
+			// console.log("customToValue", validatedDate.toDate(), textId);
 			return validatedDate.toDate();
 		} else {
 			return null;
 		}
 	}
 
+	// For Datepicker setting the actual value it displays
 	function customToDisplay(validatedDate, format, language, textId, textPrefix) {
 		updateLabels(validatedDate, textId, textPrefix);
 		if (validatedDate.isValid()) {
+			// console.log("customToDisplay", validatedDate.toDate(), textId);
 			return validatedDate.format("DD/MM/YYYY");
 		} else {
 			return null;
 		}
 	}
 
-	function calculate(idOfUpdate, val) {
-		expectedDueDate = validateDate($("#EDDDatepicker").val());
-		calcFromDate = validateDate($("#dateFromDatepicker").val());
-		gestationalAge = $("#gestationalAge").val();
+	function calculate(idOfUpdate, dateValue) {
+		// Get current value of all the input fields
+		expectedDueDate = validateDate($("#EDDDatepicker").clone().val());
+		calcFromDate = validateDate($("#dateFromDatepicker").clone().val());
+		gestationalAge = $("#gestationalAge").clone().val();
+		// console.log(`idOfUpdate: ${idOfUpdate}`);
 
 		if (idOfUpdate == "#EDDDatepicker") {
-			expectedDueDate = val;
+			expectedDueDate = dateValue.clone();
 		}
 
 		if (idOfUpdate == "#dateFromDatepicker") {
-			calcFromDate = val;
+			calcFromDate = dateValue.clone();
 		}
 
+		// Check which the selected value to update is
 		var radioButtons = document.getElementsByName("options");
 		for (var i = 0; i < radioButtons.length; i++) {
 			if (radioButtons[i].checked) {
@@ -262,6 +287,7 @@ $(function () {
 
 		valid = 0;
 
+		// Checks if the dates are valid (to see if more than 2 are valid)
 		if (expectedDueDate.isValid()) {
 			isExpectedDueDateValid = true;
 			valid++;
@@ -285,6 +311,8 @@ $(function () {
 			isGestationalAgeValid = false;
 		}
 
+		// console.log("HERE 1, ", validateDate($("#dateFromDatepicker").clone().val()));
+
 		if (valid == 2) {
 			if (!isExpectedDueDateValid && $("#EDDDatepicker").val() === "" && selectedValue != "option1") {
 				$("[name='options']")[0].checked = true;
@@ -301,48 +329,81 @@ $(function () {
 		if (valid >= 2) {
 			// UPDATE EDD
 			if (isCalcFromDateValid && isGestationalAgeValid && idOfUpdate != "#EDDDatepicker" && selectedValue == "option1") {
+				// console.log("updating EDD");
 				validGA = textToGestationalAge(gestationalAge);
 
 				EDD = calcFromDate.add(40 * 7 - (validGA[1] + validGA[0] * 7), "days");
 
+				// console.log("HERE 2, ", validateDate($("#dateFromDatepicker").clone().val()));
+
 				$("#EDDDatepicker").datepicker("update", EDD);
+
+				// console.log("HERE 3, ", validateDate($("#dateFromDatepicker").clone().val()));
+
+				return;
 			}
 			// UPDATE GA
 			else if (isExpectedDueDateValid && isCalcFromDateValid && idOfUpdate != "#gestationalAge" && selectedValue == "option3") {
+				// console.log("updating GA");
 				GAInDays = 40 * 7 - Math.round(expectedDueDate.diff(calcFromDate, "days", true));
 
 				$("#gestationalAge").val(`${Math.floor(GAInDays / 7)} weeks ${Math.round(GAInDays % 7)} days`);
 
 				updateGestationalAge($("#gestationalAge").val());
+
+				return;
 			}
 			// UPDATE At this date
 			else if (isGestationalAgeValid && isExpectedDueDateValid && idOfUpdate != "#dateFromDatepicker" && selectedValue == "option2") {
+				// console.log("updating at this date");
 				validGA = textToGestationalAge(gestationalAge);
 
 				atThisDate = expectedDueDate.subtract(40 * 7 - (validGA[1] + validGA[0] * 7), "days");
 
 				$("#dateFromDatepicker").datepicker("update", atThisDate);
+				return;
 			}
 		} else {
 		}
 	}
 
+	// Updates button labels under the datepickers
 	function updateLabels(validatedDate, textId, textPrefix) {
-		if (validatedDate.isValid()) {
-			var formattedDate = validatedDate.format("DD/MM/YYYY");
-			$(textId).html(`${textPrefix}: ${formattedDate}`);
+		if (validatedDate.isValid(textId)) {
+			var formattedDateWithSlash = validatedDate.format("DD/MM/YYYY");
+			var formattedDateMMMMDDYYYY = validatedDate.format("MMMM DD YYYY");
 
-			if (textId == "#estimated-due-date-text") {
-				var formattedDate = validatedDate.format("MMMM DD YYYY");
-				$("#estimated-due-date-word-text").html(`${formattedDate}`);
+			if (textId == "#calculateDateText") {
+				$("#calculateDateText").attr("data-date", formattedDateWithSlash);
+				// $("#estimated-due-date-text").attr("data-date", formattedDateMMMMDDYYYY);
+
+				$("#calculateDateText").html(`${textPrefix}: ${formattedDateWithSlash}`);
+				// $("#estimated-due-date-word-text").html(`${formattedDateMMMMDDYYYY}`);
+			} else if (textId == "#estimated-due-date-text") {
+				$("#estimated-due-date-text").attr("data-date", formattedDateWithSlash);
+				$("#estimated-due-date-word-text").attr("data-date", formattedDateMMMMDDYYYY);
+
+				$("#estimated-due-date-text").html(`${textPrefix}: ${formattedDateWithSlash}`);
+				$("#estimated-due-date-word-text").html(`${formattedDateMMMMDDYYYY}`);
+			} else {
+				console.error("Something seems to have gone wrong. The textId doesn't seem to be #estimated-due-date-text or #calculateDateText");
 			}
-			return;
-		} else {
-			if (textId == "#estimated-due-date-text") {
-				$("#estimated-due-date-word-text").html("");
-			}
-			$(textId).html("");
-			return;
+
+			// 	var formattedDate = validatedDate.format("DD/MM/YYYY");
+			// 	// console.log(textId);
+			// 	$(textId).html(`${textPrefix}: ${formattedDate}`);
+
+			// 	if (textId == "#estimated-due-date-text") {
+			// 		var formattedDate = validatedDate.format("MMMM DD YYYY");
+			// 		$("#estimated-due-date-word-text").html(`${formattedDate}`);
+			// 	}
+			// 	return;
+			// } else {
+			// 	if (textId == "#estimated-due-date-text") {
+			// 		$("#estimated-due-date-word-text").html("");
+			// 	}
+			// 	$(textId).html("");
+			// 	return;
 		}
 	}
 
@@ -396,7 +457,7 @@ $(function () {
 		}
 
 		converted = textToGestationalAge(input);
-
+		$("#gestationalAgeText").attr("data-date", `${converted[0]}+${converted[1]}/40`);
 		$("#gestationalAgeText").html(`Gestational Age: ${converted[0]}+${converted[1]}/40`);
 	}
 
@@ -437,7 +498,7 @@ $(function () {
 	});
 
 	$(document).on("click", ".clipboard-btn", function () {
-		var text = $(this).text();
+		var text = $(this).attr("data-date");
 		navigator.clipboard.writeText(text);
 	});
 });
