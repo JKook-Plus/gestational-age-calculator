@@ -7,7 +7,8 @@
  *   - Editing a PiP field pushes the value into the matching main input and
  *     re-runs the real calculation pipeline (dates go through bootstrap-
  *     datepicker, so every supported format still works).
- *   - Any recompute on the main side is mirrored back into the PiP fields.
+ *   - Any recompute on the main side is mirrored back into the PiP fields,
+ *     along with the formatted-date / gestational-age copy buttons.
  *
  * main.js resolves every field via jQuery $("#id") against the main document
  * and bootstrap-datepicker anchors its calendar to the main body, so the card
@@ -27,7 +28,16 @@
 
 	var jq = window.jQuery;
 
-	// The three calculator fields and their matching main-document inputs.
+	// Copy icon (content_copy) shown on each copy button.
+	var COPY_ICON =
+		'<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" ' +
+		'fill="currentColor" aria-hidden="true" class="pip-copy-icon">' +
+		'<path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 ' +
+		'2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>';
+
+	// The three calculator fields and their matching main-document inputs. Each
+	// field lists the main summary elements (with data-date values) whose copy
+	// buttons are mirrored beneath it.
 	var FIELDS = [
 		{
 			key: "edd",
@@ -35,6 +45,7 @@
 			mainSel: "#EDDDatepicker",
 			type: "date",
 			placeholder: "e.g. 3/7/2024 or t+3",
+			copies: ["estimated-due-date-text", "estimated-due-date-word-text"],
 		},
 		{
 			key: "fromDate",
@@ -42,6 +53,7 @@
 			mainSel: "#dateFromDatepicker",
 			type: "date",
 			placeholder: "e.g. today or t+3",
+			copies: ["calculateDateText"],
 		},
 		{
 			key: "ga",
@@ -49,6 +61,7 @@
 			mainSel: "#gestationalAge",
 			type: "ga",
 			placeholder: "e.g. 39+2 or 39w2d",
+			copies: ["gestationalAgeText"],
 		},
 	];
 
@@ -73,6 +86,7 @@
 		var pipDoc = null;
 		var pipInputs = {};
 		var pipRadios = {};
+		var pipCopies = {};
 		var valueObserver = null;
 		var themeObserver = null;
 
@@ -89,7 +103,7 @@
 			try {
 				// requestWindow() must run inside the user gesture, so it is the
 				// first thing we await.
-				pipWindow = await documentPictureInPicture.requestWindow({ width: 380, height: 320 });
+				pipWindow = await documentPictureInPicture.requestWindow({ width: 380, height: 440 });
 			} catch (err) {
 				console.error("Could not open the Picture-in-Picture window:", err);
 				return;
@@ -105,7 +119,12 @@
 			// Mirror any recompute on the main side into the PiP fields. The
 			// calculator rewrites these summary elements whenever it runs.
 			valueObserver = new MutationObserver(syncFromMain);
-			["estimated-due-date-text", "calculateDateText", "gestationalAgeText"].forEach(function (id) {
+			[
+				"estimated-due-date-text",
+				"estimated-due-date-word-text",
+				"calculateDateText",
+				"gestationalAgeText",
+			].forEach(function (id) {
 				var el = document.getElementById(id);
 				if (el) {
 					valueObserver.observe(el, {
@@ -142,6 +161,7 @@
 				pipDoc = null;
 				pipInputs = {};
 				pipRadios = {};
+				pipCopies = {};
 				setButtonActive(false);
 			});
 		}
@@ -192,6 +212,7 @@
 			doc.body.textContent = "";
 			pipInputs = {};
 			pipRadios = {};
+			pipCopies = {};
 
 			var wrapper = doc.createElement("div");
 			wrapper.className = "pip-wrapper";
@@ -275,7 +296,43 @@
 			wrap.appendChild(label);
 			wrap.appendChild(input);
 			pipInputs[field.key] = input;
+
+			var copies = field.copies || [];
+			if (copies.length) {
+				var copyWrap = doc.createElement("div");
+				copyWrap.className = "pip-copies";
+				copies.forEach(function (sourceId) {
+					copyWrap.appendChild(buildCopyButton(doc, sourceId));
+				});
+				wrap.appendChild(copyWrap);
+			}
+
 			return wrap;
+		}
+
+		function buildCopyButton(doc, sourceId) {
+			var button = doc.createElement("button");
+			button.type = "button";
+			button.className = "btn btn-secondary btn-sm pip-copy";
+			button.title = "Click to copy";
+			button.style.display = "none";
+			button.innerHTML = COPY_ICON + '<span class="pip-copy-text"></span>';
+
+			button.addEventListener("click", function () {
+				var text = button.getAttribute("data-copy");
+				if (!text) {
+					return;
+				}
+				var clipboard = doc.defaultView.navigator.clipboard;
+				if (clipboard) {
+					clipboard.writeText(text).catch(function (err) {
+						console.error("Failed to copy to clipboard:", err);
+					});
+				}
+			});
+
+			pipCopies[sourceId] = button;
+			return button;
 		}
 
 		// Push a PiP field's value into its main input and run the real pipeline.
@@ -325,7 +382,8 @@
 			syncFromMain();
 		}
 
-		// Mirror the main inputs' values, validity, and selected mode into PiP.
+		// Mirror the main inputs' values, validity, copy buttons, and selected
+		// mode into the PiP window.
 		function syncFromMain() {
 			if (!pipDoc || !jq) {
 				return;
@@ -350,12 +408,41 @@
 				}
 			});
 
+			syncCopyButtons();
+
 			var mainRadios = document.getElementsByName("options");
 			OPTIONS.forEach(function (option) {
 				var radio = pipRadios[option.pipId];
 				var mainRadio = mainRadios[option.mainIndex];
 				if (radio && mainRadio) {
 					radio.checked = mainRadio.checked;
+				}
+			});
+		}
+
+		// Mirror the main summary elements' formatted values into the PiP copy
+		// buttons, hiding any that have no value (matching the main page).
+		function syncCopyButtons() {
+			Object.keys(pipCopies).forEach(function (sourceId) {
+				var button = pipCopies[sourceId];
+				var source = document.getElementById(sourceId);
+				var value = source ? source.getAttribute("data-date") : null;
+				var textEl = button.querySelector(".pip-copy-text");
+
+				if (value) {
+					if (textEl) {
+						textEl.textContent = value;
+					}
+					button.setAttribute("data-copy", value);
+					button.style.display = "";
+					button.disabled = false;
+				} else {
+					if (textEl) {
+						textEl.textContent = "";
+					}
+					button.removeAttribute("data-copy");
+					button.style.display = "none";
+					button.disabled = true;
 				}
 			});
 		}

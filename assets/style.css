@@ -158,3 +158,30 @@ th {
     opacity: 0.55;
     text-align: center;
 }
+
+.pip-copies {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-top: 4px;
+}
+
+.pip-copy {
+    display: inline-flex;
+    align-items: center;
+    justify-content: flex-start;
+    width: 100%;
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+}
+
+.pip-copy .pip-copy-text {
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.pip-copy-icon {
+    flex-shrink: 0;
+    margin-right: 6px;
+}
