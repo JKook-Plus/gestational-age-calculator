@@ -275,6 +275,12 @@
 							return;
 						}
 						pushToMain(field, input.value);
+					})
+					.on("hide", function () {
+						// Syncs are skipped while the calendar is open; converge
+						// once it closes (deferred — hide fires mid-click during
+						// autoclose).
+						setTimeout(syncFromMain, 0);
 					});
 			});
 
@@ -543,6 +549,18 @@
 			value = value == null ? "" : value;
 
 			if (field.type === "date" && datepickersReady && pipJQ) {
+				// Never touch a picker whose calendar is open: update() always
+				// rebuilds the day grid (fill()), and a rebuild between the
+				// mousedown and click of a day selection detaches the clicked
+				// cell, swallowing the pick. The hide handler resyncs instead.
+				var dp = pipJQ(input).data("datepicker");
+				if (dp && dp.picker && dp.picker.is(":visible")) {
+					return;
+				}
+				// Already in sync — skip the pointless re-render.
+				if (input.value === value) {
+					return;
+				}
 				// Update through the picker so its calendar highlight tracks too.
 				suppressPush = true;
 				try {
