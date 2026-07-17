@@ -263,9 +263,9 @@ $(function () {
 
 	function calculate(idOfUpdate, dateValue) {
 		// Get current value of all the input fields
-		var expectedDueDate = validateDate($("#EDDDatepicker").clone().val());
-		var calcFromDate = validateDate($("#dateFromDatepicker").clone().val());
-		var gestationalAge = $("#gestationalAge").clone().val();
+		var expectedDueDate = validateDate($("#EDDDatepicker").val());
+		var calcFromDate = validateDate($("#dateFromDatepicker").val());
+		var gestationalAge = $("#gestationalAge").val();
 		// console.log(`idOfUpdate: ${idOfUpdate}`);
 
 		if (idOfUpdate == "#EDDDatepicker") {
@@ -370,7 +370,7 @@ $(function () {
 
 	// Updates button labels under the datepickers
 	function updateLabels(validatedDate, textId, textPrefix) {
-		if (validatedDate.isValid(textId)) {
+		if (validatedDate.isValid()) {
 			var formattedDateWithSlash = validatedDate.format("DD/MM/YYYY");
 			var formattedDateMMMMDDYYYY = validatedDate.format("MMMM DD YYYY");
 
@@ -509,6 +509,11 @@ $(function () {
 
 	$(document).on("click", ".clipboard-btn", function () {
 		var text = $(this).attr("data-date");
-		navigator.clipboard.writeText(text);
+		if (!text) {
+			return;
+		}
+		navigator.clipboard.writeText(text).catch(function (err) {
+			console.error("Failed to copy to clipboard:", err);
+		});
 	});
 });
