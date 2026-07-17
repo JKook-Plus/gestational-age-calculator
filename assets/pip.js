@@ -1,19 +1,21 @@
 /*
  * Document Picture-in-Picture: pops out a small, always-on-top, fully
  * interactive copy of the calculator. The PiP window holds its own editable
- * fields and mode selector that are wired bidirectionally to the real inputs
- * in the main document:
+ * fields, mode selector, and date pickers, wired bidirectionally to the real
+ * inputs in the main document:
  *
- *   - Editing a PiP field pushes the value into the matching main input and
- *     re-runs the real calculation pipeline (dates go through bootstrap-
- *     datepicker, so every supported format still works).
+ *   - Editing a PiP field (typing or picking from its calendar) pushes the
+ *     value into the matching main input and re-runs the real calculation
+ *     pipeline (dates go through the main bootstrap-datepicker, so every
+ *     supported format still works).
  *   - Any recompute on the main side is mirrored back into the PiP fields,
- *     along with the formatted-date / gestational-age copy buttons.
+ *     their date pickers, and the formatted-date / gestational-age copy
+ *     buttons.
  *
- * main.js resolves every field via jQuery $("#id") against the main document
- * and bootstrap-datepicker anchors its calendar to the main body, so the card
- * itself can't simply be relocated; this remote-control approach keeps main.js
- * as the single source of truth.
+ * The PiP window loads its own jQuery + bootstrap-datepicker so its calendars
+ * run in the PiP realm (correct positioning, popup anchored to the PiP body).
+ * main.js stays the single source of truth: the PiP panel drives the main
+ * inputs remotely rather than relocating the card.
  *
  * Docs: https://developer.chrome.com/docs/web-platform/document-picture-in-picture
  */
@@ -27,6 +29,18 @@
 	}
 
 	var jq = window.jQuery;
+
+	// Libraries loaded into the PiP window so its date pickers run in that realm.
+	var LIB_SCRIPTS = [
+		{
+			src: "https://code.jquery.com/jquery-3.6.4.min.js",
+			integrity: "sha384-UG8ao2jwOWB7/oDdObZc6ItJmwUkR/PfMyt9Qs5AwX7PsnYn1CRKCTWyncPTWvaS",
+		},
+		{
+			src: "https://cdn.jsdelivr.net/npm/bootstrap-datepicker@1.10.0/dist/js/bootstrap-datepicker.min.js",
+			integrity: "sha384-hrC0I6QUg0tSdzNW47DRT7ohgBLywmjg37cLYZbdXVZLJHwJhFfqo7ouWr5yfSmv",
+		},
+	];
 
 	// Copy icon (content_copy) shown on each copy button.
 	var COPY_ICON =
@@ -52,6 +66,7 @@
 			label: "At this date",
 			mainSel: "#dateFromDatepicker",
 			type: "date",
+			todayBtn: true,
 			placeholder: "e.g. today or t+3",
 			copies: ["calculateDateText"],
 		},
@@ -84,11 +99,15 @@
 
 		var pipWindow = null;
 		var pipDoc = null;
+		var pipJQ = null;
 		var pipInputs = {};
 		var pipRadios = {};
 		var pipCopies = {};
 		var valueObserver = null;
 		var themeObserver = null;
+		var datepickersReady = false;
+		// Guards mirror-driven datepicker updates from being pushed back to main.
+		var suppressPush = false;
 
 		pipButton.addEventListener("click", function () {
 			// Toggle: close if one is already open, otherwise open a new one.
@@ -110,11 +129,21 @@
 			}
 
 			pipDoc = pipWindow.document;
+			pipJQ = null;
+			datepickersReady = false;
 			pipDoc.title = "Gestational Age Calculator";
 			copyStyleSheets(pipWindow);
 			syncThemeAttributes(pipWindow);
 			buildPanel();
 			syncFromMain();
+
+			// Give the PiP window its own date pickers (best-effort — typing still
+			// works if the libraries fail to load).
+			ensureDatepickerLibs()
+				.then(initPipDatepickers)
+				.catch(function (err) {
+					console.warn("PiP date pickers unavailable, using text entry only:", err);
+				});
 
 			// Mirror any recompute on the main side into the PiP fields. The
 			// calculator rewrites these summary elements whenever it runs.
@@ -159,6 +188,8 @@
 				}
 				pipWindow = null;
 				pipDoc = null;
+				pipJQ = null;
+				datepickersReady = false;
 				pipInputs = {};
 				pipRadios = {};
 				pipCopies = {};
@@ -169,6 +200,85 @@
 		function setButtonActive(isActive) {
 			pipButton.classList.toggle("active", isActive);
 			pipButton.setAttribute("aria-pressed", isActive ? "true" : "false");
+		}
+
+		// Load jQuery + bootstrap-datepicker into the PiP window (once). Resolves
+		// when $.fn.datepicker is available in the PiP realm.
+		function ensureDatepickerLibs() {
+			return new Promise(function (resolve, reject) {
+				if (pipWindow && pipWindow.jQuery && pipWindow.jQuery.fn && pipWindow.jQuery.fn.datepicker) {
+					resolve();
+					return;
+				}
+
+				var index = 0;
+				function loadNext() {
+					if (!pipWindow || !pipDoc) {
+						reject(new Error("PiP window closed before libraries loaded"));
+						return;
+					}
+					if (index >= LIB_SCRIPTS.length) {
+						resolve();
+						return;
+					}
+					var spec = LIB_SCRIPTS[index++];
+					var script = pipDoc.createElement("script");
+					script.src = spec.src;
+					script.integrity = spec.integrity;
+					script.crossOrigin = "anonymous";
+					script.onload = loadNext;
+					script.onerror = function () {
+						reject(new Error("Failed to load " + spec.src));
+					};
+					pipDoc.head.appendChild(script);
+				}
+				loadNext();
+			});
+		}
+
+		function initPipDatepickers() {
+			if (!pipDoc || !pipWindow || !pipWindow.jQuery) {
+				return;
+			}
+			pipJQ = pipWindow.jQuery;
+			if (!pipJQ.fn || !pipJQ.fn.datepicker) {
+				return;
+			}
+
+			FIELDS.forEach(function (field) {
+				if (field.type !== "date") {
+					return;
+				}
+				var input = pipInputs[field.key];
+				if (!input) {
+					return;
+				}
+				pipJQ(input)
+					.datepicker({
+						format: "dd/mm/yyyy",
+						autoclose: true,
+						forceParse: false,
+						todayHighlight: true,
+						todayBtn: field.todayBtn ? true : false,
+						weekStart: 1,
+						keyboardNavigation: false,
+						orientation: "auto",
+						container: pipDoc.body,
+					})
+					.on("changeDate", function () {
+						// Fires on calendar picks (and on our own mirror updates,
+						// which are guarded).
+						if (suppressPush) {
+							return;
+						}
+						pushToMain(field, input.value);
+						syncFromMain();
+					});
+			});
+
+			datepickersReady = true;
+			// Seed the pickers with whatever the calculator currently holds.
+			syncFromMain();
 		}
 
 		// Copy same-origin sheets inline (their cssRules are readable); fall back
@@ -285,6 +395,7 @@
 			input.className = "form-control form-control-sm";
 			input.id = groupId;
 			input.placeholder = field.placeholder;
+			input.autocomplete = "off";
 
 			input.addEventListener("input", function () {
 				pushToMain(field, input.value);
@@ -389,25 +500,7 @@
 				return;
 			}
 
-			FIELDS.forEach(function (field) {
-				var input = pipInputs[field.key];
-				if (!input) {
-					return;
-				}
-				var $main = jq(field.mainSel);
-				input.classList.toggle("is-valid", $main.hasClass("is-valid"));
-				input.classList.toggle("is-invalid", $main.hasClass("is-invalid"));
-
-				// Don't overwrite the field the user is currently typing in.
-				if (pipDoc.activeElement !== input) {
-					var value = $main.val();
-					value = value == null ? "" : value;
-					if (input.value !== value) {
-						input.value = value;
-					}
-				}
-			});
-
+			FIELDS.forEach(syncField);
 			syncCopyButtons();
 
 			var mainRadios = document.getElementsByName("options");
@@ -418,6 +511,39 @@
 					radio.checked = mainRadio.checked;
 				}
 			});
+		}
+
+		function syncField(field) {
+			var input = pipInputs[field.key];
+			if (!input) {
+				return;
+			}
+			var $main = jq(field.mainSel);
+			input.classList.toggle("is-valid", $main.hasClass("is-valid"));
+			input.classList.toggle("is-invalid", $main.hasClass("is-invalid"));
+
+			// Don't overwrite the field the user is currently editing.
+			if (pipDoc.activeElement === input) {
+				return;
+			}
+
+			var value = $main.val();
+			value = value == null ? "" : value;
+
+			if (field.type === "date" && datepickersReady && pipJQ) {
+				// Update through the picker so its calendar highlight tracks too.
+				suppressPush = true;
+				try {
+					pipJQ(input).datepicker("update", value);
+				} catch (err) {
+					if (input.value !== value) {
+						input.value = value;
+					}
+				}
+				suppressPush = false;
+			} else if (input.value !== value) {
+				input.value = value;
+			}
 		}
 
 		// Mirror the main summary elements' formatted values into the PiP copy
