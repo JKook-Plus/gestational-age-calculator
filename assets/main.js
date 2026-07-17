@@ -437,12 +437,21 @@ $(function () {
 				days = match2[2] ? parseInt(match2[2], 10) : 0;
 			}
 
+			// The days component of a gestational age must be 0-6
+			if (weeks === undefined || days === undefined || days > 6) {
+				return null;
+			}
+
 			return [weeks, days];
 		} else {
 			const simpleMatch = userInput.match(/^(\d+)\s+(\d+)$/);
 			if (simpleMatch) {
 				const weeks = parseInt(simpleMatch[1], 10);
 				const days = parseInt(simpleMatch[2], 10);
+				// The days component of a gestational age must be 0-6
+				if (days > 6) {
+					return null;
+				}
 				return [weeks, days];
 			} else {
 				return null;
