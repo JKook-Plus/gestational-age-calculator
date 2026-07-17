@@ -4,13 +4,13 @@ $(function () {
 	$("#EDDDatepicker").datepicker({
 		format: {
 			toDisplay: function (date, format, language) {
-				validatedDate = validateDate(date);
+				var validatedDate = validateDate(date);
 				dateFormValidate(validatedDate, date, "#EDDDatepicker");
 				calculate("#EDDDatepicker", validatedDate);
 				return customToDisplay(validatedDate, format, language, "#estimated-due-date-text", "Estimated Due Date (EDD)");
 			},
 			toValue: function (date, format, language) {
-				validatedDate = validateDate(date);
+				var validatedDate = validateDate(date);
 				dateFormValidate(validatedDate, date, "#EDDDatepicker");
 				calculate("#EDDDatepicker", validatedDate);
 				return customToValue(validatedDate, format, language, "#estimated-due-date-text", "Estimated Due Date (EDD)");
@@ -30,13 +30,13 @@ $(function () {
 	$("#dateFromDatepicker").datepicker({
 		format: {
 			toDisplay: function (date, format, language) {
-				validatedDate = validateDate(date);
+				var validatedDate = validateDate(date);
 				dateFormValidate(validatedDate, date, "#dateFromDatepicker");
 				calculate("#dateFromDatepicker", validatedDate);
 				return customToDisplay(validatedDate, format, language, "#calculateDateText", "Calculate from date");
 			},
 			toValue: function (date, format, language) {
-				validatedDate = validateDate(date);
+				var validatedDate = validateDate(date);
 				// console.log(`1 getDate: ${$("#dateFromDatepicker").datepicker("getDate")}, ${validatedDate}`);
 				// console.log(`1 val: ${$("#dateFromDatepicker").datepicker("getValue").val()}, ${validatedDate}`);
 				dateFormValidate(validatedDate, date, "#dateFromDatepicker");
@@ -63,7 +63,7 @@ $(function () {
 	$("#EDDDatepicker")
 		.datepicker()
 		.on("input", function () {
-			val = $(this).datepicker("getValue").val();
+			var val = $(this).datepicker("getValue").val();
 			if (val === null || val.match(/^ *$/) !== null) {
 				$(this).removeClass("is-invalid");
 				$(this).removeClass("is-valid");
@@ -76,7 +76,7 @@ $(function () {
 	$("#dateFromDatepicker")
 		.datepicker()
 		.on("input", function () {
-			val = $(this).datepicker("getValue").val();
+			var val = $(this).datepicker("getValue").val();
 			if (val === null || val.match(/^ *$/) !== null) {
 				$(this).removeClass("is-invalid");
 				$(this).removeClass("is-valid");
@@ -206,7 +206,7 @@ $(function () {
 			}
 		}
 
-		isValid = validatedDate.isValid();
+		var isValid = validatedDate.isValid();
 
 		if (isValid) {
 			$(datepickerID).addClass("is-valid");
@@ -221,7 +221,7 @@ $(function () {
 
 	// Checks to see if the GA input field is valid
 	function GAFormValidate(input) {
-		GAform = $("#gestationalAge");
+		var GAform = $("#gestationalAge");
 		if (input != "" && input != null) {
 			if (textToGestationalAge(input) != null) {
 				GAform.addClass("is-valid");
@@ -263,9 +263,9 @@ $(function () {
 
 	function calculate(idOfUpdate, dateValue) {
 		// Get current value of all the input fields
-		expectedDueDate = validateDate($("#EDDDatepicker").clone().val());
-		calcFromDate = validateDate($("#dateFromDatepicker").clone().val());
-		gestationalAge = $("#gestationalAge").clone().val();
+		var expectedDueDate = validateDate($("#EDDDatepicker").clone().val());
+		var calcFromDate = validateDate($("#dateFromDatepicker").clone().val());
+		var gestationalAge = $("#gestationalAge").clone().val();
 		// console.log(`idOfUpdate: ${idOfUpdate}`);
 
 		if (idOfUpdate == "#EDDDatepicker") {
@@ -278,6 +278,7 @@ $(function () {
 
 		// Check which the selected value to update is
 		var radioButtons = document.getElementsByName("options");
+		var selectedValue;
 		for (var i = 0; i < radioButtons.length; i++) {
 			if (radioButtons[i].checked) {
 				selectedValue = radioButtons[i].id;
@@ -285,24 +286,24 @@ $(function () {
 			}
 		}
 
-		valid = 0;
+		var valid = 0;
 
 		// Checks if the dates are valid (to see if more than 2 are valid)
 		if (expectedDueDate.isValid()) {
-			isExpectedDueDateValid = true;
+			var isExpectedDueDateValid = true;
 			valid++;
 		} else {
 			isExpectedDueDateValid = false;
 		}
 		if (calcFromDate.isValid()) {
-			isCalcFromDateValid = true;
+			var isCalcFromDateValid = true;
 			valid++;
 		} else {
 			isCalcFromDateValid = false;
 		}
 		if ((gestationalAge != "") | (gestationalAge != null)) {
 			if (textToGestationalAge(gestationalAge) != null) {
-				isGestationalAgeValid = true;
+				var isGestationalAgeValid = true;
 				valid++;
 			} else {
 				isGestationalAgeValid = false;
@@ -330,9 +331,9 @@ $(function () {
 			// UPDATE EDD
 			if (isCalcFromDateValid && isGestationalAgeValid && idOfUpdate != "#EDDDatepicker" && selectedValue == "option1") {
 				// console.log("updating EDD");
-				validGA = textToGestationalAge(gestationalAge);
+				var validGA = textToGestationalAge(gestationalAge);
 
-				EDD = calcFromDate.add(40 * 7 - (validGA[1] + validGA[0] * 7), "days");
+				var EDD = calcFromDate.add(40 * 7 - (validGA[1] + validGA[0] * 7), "days");
 
 				// console.log("HERE 2, ", validateDate($("#dateFromDatepicker").clone().val()));
 
@@ -345,7 +346,7 @@ $(function () {
 			// UPDATE GA
 			else if (isExpectedDueDateValid && isCalcFromDateValid && idOfUpdate != "#gestationalAge" && selectedValue == "option3") {
 				// console.log("updating GA");
-				GAInDays = 40 * 7 - Math.round(expectedDueDate.diff(calcFromDate, "days", true));
+				var GAInDays = 40 * 7 - Math.round(expectedDueDate.diff(calcFromDate, "days", true));
 
 				$("#gestationalAge").val(`${Math.floor(GAInDays / 7)} weeks ${Math.round(GAInDays % 7)} days`);
 
@@ -356,9 +357,9 @@ $(function () {
 			// UPDATE At this date
 			else if (isGestationalAgeValid && isExpectedDueDateValid && idOfUpdate != "#dateFromDatepicker" && selectedValue == "option2") {
 				// console.log("updating at this date");
-				validGA = textToGestationalAge(gestationalAge);
+				var validGA = textToGestationalAge(gestationalAge);
 
-				atThisDate = expectedDueDate.subtract(40 * 7 - (validGA[1] + validGA[0] * 7), "days");
+				var atThisDate = expectedDueDate.subtract(40 * 7 - (validGA[1] + validGA[0] * 7), "days");
 
 				$("#dateFromDatepicker").datepicker("update", atThisDate);
 				return;
@@ -456,13 +457,13 @@ $(function () {
 			return;
 		}
 
-		converted = textToGestationalAge(input);
+		var converted = textToGestationalAge(input);
 		$("#gestationalAgeText").attr("data-date", `${converted[0]}+${converted[1]}/40`);
 		$("#gestationalAgeText").html(`Gestational Age: ${converted[0]}+${converted[1]}/40`);
 	}
 
 	$("#gestationalAge").on("input", function () {
-		input = $(this).val();
+		var input = $(this).val();
 
 		calculate("#gestationalAge", input);
 
