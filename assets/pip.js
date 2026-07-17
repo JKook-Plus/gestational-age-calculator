@@ -266,12 +266,15 @@
 					})
 					.on("changeDate", function () {
 						// Fires on calendar picks (and on our own mirror updates,
-						// which are guarded).
+						// which are guarded). Only push to the calculator here — the
+						// value observer mirrors the recompute back afterwards.
+						// Calling syncFromMain() synchronously would re-enter this
+						// same picker mid-selection (the day click blurs the input),
+						// which swallows the first click and needs a second.
 						if (suppressPush) {
 							return;
 						}
 						pushToMain(field, input.value);
-						syncFromMain();
 					});
 			});
 
