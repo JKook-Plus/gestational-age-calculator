@@ -38,15 +38,15 @@
 					</div>
 
 					<div class="row">
-						<div id="selectionBar" role="group" class="btn-group my-2" style="height: 25px">
+						<div id="selectionBar" role="group" aria-label="Choose which value to calculate" class="btn-group my-2">
 							<input type="radio" class="btn-check" name="options" id="option1" autocomplete="off" />
-							<label class="btn btn-outline-secondary" for="option1"></label>
+							<label class="btn btn-outline-secondary" for="option1" aria-label="Calculate estimated due date">EDD</label>
 
 							<input type="radio" class="btn-check" name="options" id="option2" autocomplete="off" />
-							<label class="btn btn-outline-secondary" for="option2"></label>
+							<label class="btn btn-outline-secondary" for="option2" aria-label="Calculate the from date">Date</label>
 
 							<input type="radio" class="btn-check" name="options" id="option3" autocomplete="off" checked="" />
-							<label class="btn btn-outline-secondary" for="option3"></label>
+							<label class="btn btn-outline-secondary" for="option3" aria-label="Calculate gestational age">GA</label>
 						</div>
 
 						<div class="col date-input-group" id="EDDDatePickerGroup">
