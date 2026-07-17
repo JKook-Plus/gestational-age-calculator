@@ -108,3 +108,87 @@ th {
         fill: var(--bs-secondary);
     }
 }
+
+/* Picture-in-Picture toggle icon */
+.pip-icon {
+    fill: var(--bs-secondary);
+}
+
+/* Picture-in-Picture summary panel (rendered inside the PiP window) */
+.pip-body {
+    margin: 0;
+}
+
+.pip-wrapper {
+    box-sizing: border-box;
+    min-height: 100vh;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+.pip-title {
+    margin: 0 0 6px 0;
+    font-size: 1rem;
+    font-weight: 600;
+    text-align: center;
+}
+
+.pip-row {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    width: 100%;
+    padding: 8px 12px;
+    border: none;
+    border-radius: 10px;
+    background-color: var(--bs-secondary-bg, rgba(128, 128, 128, 0.12));
+    color: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+
+.pip-row:hover:not(:disabled) {
+    filter: brightness(1.08);
+}
+
+.pip-row:disabled {
+    cursor: default;
+    opacity: 0.65;
+}
+
+.pip-label {
+    flex-shrink: 0;
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    opacity: 0.7;
+}
+
+.pip-value-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    text-align: right;
+    min-width: 0;
+}
+
+.pip-value {
+    font-size: 1.1rem;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.2;
+}
+
+.pip-empty .pip-value {
+    font-weight: 400;
+    opacity: 0.5;
+}
+
+.pip-sub {
+    font-size: 0.72rem;
+    opacity: 0.6;
+}

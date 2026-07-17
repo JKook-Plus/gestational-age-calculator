@@ -19,6 +19,12 @@
 				<div>
 					<button id="colorToggle" class="btn mx-0" style="width: 80px; height: 40px; font-size: 10px" onclick="toggleDarkMode()"></button>
 
+					<button id="pipToggle" class="btn mx-0" style="display: none; height: 40px" title="Open a floating summary (Picture-in-Picture)" aria-label="Open the calculator summary in a Picture-in-Picture window" aria-pressed="false">
+						<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" class="pip-icon" aria-hidden="true">
+							<path d="M19 11h-8v6h8v-6zm4 8V4.98C23 3.88 22.1 3 21 3H3c-1.1 0-2 .88-2 1.98V19c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2zm-2 .02H3V4.97h18v14.05z" />
+						</svg>
+					</button>
+
 					<a href="https://github.com/JKook-Plus/gestational-age-calculator" class="" target="_blank">
 						<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" class="logo">
 							<path
@@ -92,5 +98,6 @@
 		<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL" crossorigin="anonymous"></script>
 
 		<script src="/assets/main.js" defer></script>
+		<script src="/assets/pip.js" defer></script>
 	</body>
 </html>
