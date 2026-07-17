@@ -301,7 +301,7 @@ $(function () {
 		} else {
 			isCalcFromDateValid = false;
 		}
-		if ((gestationalAge != "") | (gestationalAge != null)) {
+		if (gestationalAge != "" && gestationalAge != null) {
 			if (textToGestationalAge(gestationalAge) != null) {
 				var isGestationalAgeValid = true;
 				valid++;
@@ -452,7 +452,7 @@ $(function () {
 
 	function updateGestationalAge(input) {
 		GAFormValidate(input);
-		if ((input === "") | (textToGestationalAge(input) == null)) {
+		if (input === "" || textToGestationalAge(input) == null) {
 			$("#gestationalAgeText").html(``);
 			return;
 		}
