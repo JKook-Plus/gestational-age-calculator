@@ -152,13 +152,6 @@ th {
     opacity: 0.8;
 }
 
-.pip-hint {
-    margin: 2px 0 0 0;
-    font-size: 0.7rem;
-    opacity: 0.55;
-    text-align: center;
-}
-
 .pip-copies {
     display: flex;
     flex-direction: column;

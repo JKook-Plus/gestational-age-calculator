@@ -148,12 +148,7 @@
 			// Mirror any recompute on the main side into the PiP fields. The
 			// calculator rewrites these summary elements whenever it runs.
 			valueObserver = new MutationObserver(syncFromMain);
-			[
-				"estimated-due-date-text",
-				"estimated-due-date-word-text",
-				"calculateDateText",
-				"gestationalAgeText",
-			].forEach(function (id) {
+			["estimated-due-date-text", "estimated-due-date-word-text", "calculateDateText", "gestationalAgeText"].forEach(function (id) {
 				var el = document.getElementById(id);
 				if (el) {
 					valueObserver.observe(el, {
@@ -262,7 +257,7 @@
 						todayBtn: field.todayBtn ? true : false,
 						weekStart: 1,
 						keyboardNavigation: false,
-						orientation: "auto",
+						orientation: "bottom left",
 						container: pipDoc.body,
 					})
 					.on("changeDate", function () {
@@ -337,11 +332,6 @@
 			FIELDS.forEach(function (field) {
 				wrapper.appendChild(buildField(doc, field));
 			});
-
-			var hint = doc.createElement("p");
-			hint.className = "pip-hint";
-			hint.textContent = "Fill any two values — the third is calculated.";
-			wrapper.appendChild(hint);
 
 			doc.body.appendChild(wrapper);
 		}
