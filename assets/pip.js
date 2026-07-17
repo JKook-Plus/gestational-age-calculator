@@ -59,6 +59,9 @@
 			mainSel: "#EDDDatepicker",
 			type: "date",
 			placeholder: "e.g. 3/7/2024 or t+3",
+			// Canonical DD/MM/YYYY value to feed the picker (the main input may
+			// hold raw text like "01 10" or "t" that the picker can't parse).
+			dateSourceId: "estimated-due-date-text",
 			copies: ["estimated-due-date-text", "estimated-due-date-word-text"],
 		},
 		{
@@ -68,6 +71,7 @@
 			type: "date",
 			todayBtn: true,
 			placeholder: "e.g. today or t+3",
+			dateSourceId: "calculateDateText",
 			copies: ["calculateDateText"],
 		},
 		{
@@ -517,7 +521,16 @@
 				return;
 			}
 
-			var value = $main.val();
+			// For date fields, use the canonical DD/MM/YYYY value the calculator
+			// publishes; the raw main input can hold formats the picker can't
+			// parse (and would otherwise fall back to today's date).
+			var value;
+			if (field.type === "date" && field.dateSourceId) {
+				var source = document.getElementById(field.dateSourceId);
+				value = source ? source.getAttribute("data-date") : null;
+			} else {
+				value = $main.val();
+			}
 			value = value == null ? "" : value;
 
 			if (field.type === "date" && datepickersReady && pipJQ) {
