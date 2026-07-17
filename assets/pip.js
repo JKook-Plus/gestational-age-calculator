@@ -399,7 +399,13 @@
 				syncFromMain();
 			});
 			// When the field loses focus, pull the canonical (re-formatted) value.
-			input.addEventListener("blur", syncFromMain);
+			// Deferred: a blur fired by clicking a day in this field's own
+			// calendar arrives on mousedown, before the day's click event. Syncing
+			// synchronously would re-render the picker between mousedown and click
+			// and swallow the selection (needing a second click).
+			input.addEventListener("blur", function () {
+				setTimeout(syncFromMain, 0);
+			});
 
 			wrap.appendChild(label);
 			wrap.appendChild(input);
