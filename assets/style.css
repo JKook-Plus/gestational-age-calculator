@@ -3,6 +3,8 @@
 .notClickable {
     pointer-events: none;
     opacity: 0;
+    /* Keeps the button out of the keyboard tab order while preserving layout */
+    visibility: hidden;
 }
 
 .image-selector {

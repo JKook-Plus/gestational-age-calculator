@@ -472,31 +472,15 @@
 			}
 		}
 
-		// Select which field the calculator outputs, then force a recompute.
+		// Select which field the calculator outputs. Checking the main radio and
+		// firing its change event hands the recompute to main.js's handler, so
+		// the PiP selector behaves exactly like the main-page one.
 		function selectOutput(option) {
 			var mainRadios = document.getElementsByName("options");
-			if (mainRadios[option.mainIndex]) {
-				mainRadios[option.mainIndex].checked = true;
-			}
-
-			// Re-trigger a valid, non-output field so calculate() runs with the
-			// new selection and rewrites the output field.
-			if (jq) {
-				var others = FIELDS.filter(function (f) {
-					return f.key !== option.outputKey;
-				});
-				for (var i = 0; i < others.length; i++) {
-					var $main = jq(others[i].mainSel);
-					var current = $main.val();
-					if (current && current.trim() !== "") {
-						if (others[i].type === "date") {
-							$main.datepicker("update");
-						} else {
-							$main.trigger("input");
-						}
-						break;
-					}
-				}
+			var mainRadio = mainRadios[option.mainIndex];
+			if (mainRadio && !mainRadio.checked) {
+				mainRadio.checked = true;
+				mainRadio.dispatchEvent(new Event("change", { bubbles: true }));
 			}
 
 			syncFromMain();

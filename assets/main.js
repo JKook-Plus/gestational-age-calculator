@@ -60,29 +60,31 @@ $(function () {
 	});
 
 	// For setting the outline color of the Expected Due Date Datepicker
-	$("#EDDDatepicker")
-		.datepicker()
-		.on("input", function () {
-			var val = $(this).datepicker("getValue").val();
-			if (val === null || val.match(/^ *$/) !== null) {
-				$(this).removeClass("is-invalid");
-				$(this).removeClass("is-valid");
-				$("#estimated-due-date-text").html("");
-				$("#estimated-due-date-word-text").html("");
-			}
-		});
+	$("#EDDDatepicker").on("input", function () {
+		var val = $(this).val();
+		if (!val || val.match(/^ *$/) !== null) {
+			$(this).removeClass("is-invalid");
+			$(this).removeClass("is-valid");
+			$("#estimated-due-date-text").removeAttr("data-date").html("");
+			$("#estimated-due-date-word-text").removeAttr("data-date").html("");
+		}
+	});
 
 	// For setting the outline color of the Date From Datepicker
-	$("#dateFromDatepicker")
-		.datepicker()
-		.on("input", function () {
-			var val = $(this).datepicker("getValue").val();
-			if (val === null || val.match(/^ *$/) !== null) {
-				$(this).removeClass("is-invalid");
-				$(this).removeClass("is-valid");
-				$("#calculateDateText").html("");
-			}
-		});
+	$("#dateFromDatepicker").on("input", function () {
+		var val = $(this).val();
+		if (!val || val.match(/^ *$/) !== null) {
+			$(this).removeClass("is-invalid");
+			$(this).removeClass("is-valid");
+			$("#calculateDateText").removeAttr("data-date").html("");
+		}
+	});
+
+	// "t"-style shortcuts mean the user's local calendar day (not the UTC day),
+	// normalised to midnight UTC like every parsed date.
+	function todayPlus(amount, unit) {
+		return moment.utc(moment().add(amount, unit).format("YYYY-MM-DD"), "YYYY-MM-DD", true);
+	}
 
 	// Checks to see if the given date is a valid date or in the format "t+3"
 	function validateDate(userInput) {
@@ -163,32 +165,33 @@ $(function () {
 
 		try {
 			if (userInput.toLowerCase() == "t") {
-				return moment.utc();
+				return todayPlus(0, "days");
 			}
 
-			var matchDays = userInput.match(/t\+(\d+)/i);
-			var matchWays = userInput.match(/w\+(\d+)/i);
-			var matchMonths = userInput.match(/m\+(\d+)/i);
-			var matchYears = userInput.match(/y\+(\d+)/i);
+			// Anchored (^...$) so date text like "May+2" can't be misread as a shortcut
+			var matchDays = userInput.match(/^t\+(\d+)$/i);
+			var matchWays = userInput.match(/^w\+(\d+)$/i);
+			var matchMonths = userInput.match(/^m\+(\d+)$/i);
+			var matchYears = userInput.match(/^y\+(\d+)$/i);
 			// For the format "t+3"
 			if (matchDays) {
 				var days = matchDays[1];
-				return moment.utc().add(days, "days");
+				return todayPlus(days, "days");
 			}
 			// For the format "w+3"
 			if (matchWays) {
 				var weeks = matchWays[1];
-				return moment.utc().add(weeks, "weeks");
+				return todayPlus(weeks, "weeks");
 			}
 			// For the format "m+3"
 			if (matchMonths) {
 				var months = matchMonths[1];
-				return moment.utc().add(months, "months");
+				return todayPlus(months, "months");
 			}
 			// For the format "y+3"
 			if (matchYears) {
 				var years = matchYears[1];
-				return moment.utc().add(years, "years");
+				return todayPlus(years, "years");
 			}
 		} catch {}
 
@@ -261,6 +264,10 @@ $(function () {
 		}
 	}
 
+	// True while calculate() is writing a result into a datepicker, so the
+	// formatter-driven re-entry isn't mistaken for a user edit.
+	var programmaticUpdate = false;
+
 	function calculate(idOfUpdate, dateValue) {
 		// Get current value of all the input fields
 		var expectedDueDate = validateDate($("#EDDDatepicker").val());
@@ -312,7 +319,22 @@ $(function () {
 			isGestationalAgeValid = false;
 		}
 
-		// console.log("HERE 1, ", validateDate($("#dateFromDatepicker").clone().val()));
+		// A user edit to the field the calculator currently outputs makes that
+		// value an input: move the output elsewhere (prefer GA; if GA itself was
+		// edited, output "at this date"), instead of leaving the fields
+		// silently inconsistent.
+		if (!programmaticUpdate) {
+			if (idOfUpdate == "#EDDDatepicker" && selectedValue == "option1" && isExpectedDueDateValid) {
+				radioButtons[2].checked = true;
+				selectedValue = "option3";
+			} else if (idOfUpdate == "#dateFromDatepicker" && selectedValue == "option2" && isCalcFromDateValid) {
+				radioButtons[2].checked = true;
+				selectedValue = "option3";
+			} else if (idOfUpdate == "#gestationalAge" && selectedValue == "option3" && isGestationalAgeValid) {
+				radioButtons[1].checked = true;
+				selectedValue = "option2";
+			}
+		}
 
 		if (valid == 2) {
 			if (!isExpectedDueDateValid && $("#EDDDatepicker").val() === "" && selectedValue != "option1") {
@@ -335,11 +357,12 @@ $(function () {
 
 				var EDD = calcFromDate.add(40 * 7 - (validGA[1] + validGA[0] * 7), "days");
 
-				// console.log("HERE 2, ", validateDate($("#dateFromDatepicker").clone().val()));
-
-				$("#EDDDatepicker").datepicker("update", EDD);
-
-				// console.log("HERE 3, ", validateDate($("#dateFromDatepicker").clone().val()));
+				programmaticUpdate = true;
+				try {
+					$("#EDDDatepicker").datepicker("update", EDD);
+				} finally {
+					programmaticUpdate = false;
+				}
 
 				return;
 			}
@@ -348,7 +371,13 @@ $(function () {
 				// console.log("updating GA");
 				var GAInDays = 40 * 7 - Math.round(expectedDueDate.diff(calcFromDate, "days", true));
 
-				$("#gestationalAge").val(`${Math.floor(GAInDays / 7)} weeks ${Math.round(GAInDays % 7)} days`);
+				// A date more than 40 weeks before the EDD is pre-conception;
+				// clamp so the result can never go negative.
+				if (GAInDays < 0) {
+					GAInDays = 0;
+				}
+
+				$("#gestationalAge").val(`${Math.floor(GAInDays / 7)} weeks ${GAInDays % 7} days`);
 
 				updateGestationalAge($("#gestationalAge").val());
 
@@ -361,7 +390,12 @@ $(function () {
 
 				var atThisDate = expectedDueDate.subtract(40 * 7 - (validGA[1] + validGA[0] * 7), "days");
 
-				$("#dateFromDatepicker").datepicker("update", atThisDate);
+				programmaticUpdate = true;
+				try {
+					$("#dateFromDatepicker").datepicker("update", atThisDate);
+				} finally {
+					programmaticUpdate = false;
+				}
 				return;
 			}
 		} else {
@@ -389,22 +423,14 @@ $(function () {
 			} else {
 				console.error("Something seems to have gone wrong. The textId doesn't seem to be #estimated-due-date-text or #calculateDateText");
 			}
-
-			// 	var formattedDate = validatedDate.format("DD/MM/YYYY");
-			// 	// console.log(textId);
-			// 	$(textId).html(`${textPrefix}: ${formattedDate}`);
-
-			// 	if (textId == "#estimated-due-date-text") {
-			// 		var formattedDate = validatedDate.format("MMMM DD YYYY");
-			// 		$("#estimated-due-date-word-text").html(`${formattedDate}`);
-			// 	}
-			// 	return;
-			// } else {
-			// 	if (textId == "#estimated-due-date-text") {
-			// 		$("#estimated-due-date-word-text").html("");
-			// 	}
-			// 	$(textId).html("");
-			// 	return;
+		} else {
+			// Invalid or cleared input: drop the stale label and copy value
+			if (textId == "#calculateDateText") {
+				$("#calculateDateText").removeAttr("data-date").html("");
+			} else if (textId == "#estimated-due-date-text") {
+				$("#estimated-due-date-text").removeAttr("data-date").html("");
+				$("#estimated-due-date-word-text").removeAttr("data-date").html("");
+			}
 		}
 	}
 
@@ -462,7 +488,7 @@ $(function () {
 	function updateGestationalAge(input) {
 		GAFormValidate(input);
 		if (input === "" || textToGestationalAge(input) == null) {
-			$("#gestationalAgeText").html(``);
+			$("#gestationalAgeText").removeAttr("data-date").html("");
 			return;
 		}
 
@@ -470,6 +496,44 @@ $(function () {
 		$("#gestationalAgeText").attr("data-date", `${converted[0]}+${converted[1]}/40`);
 		$("#gestationalAgeText").html(`Gestational Age: ${converted[0]}+${converted[1]}/40`);
 	}
+
+	// Recompute the selected output from the other fields when the mode
+	// changes without any field edit. Bound to the main-page radios; the PiP
+	// selector dispatches the same change event, so both stay consistent.
+	function recomputeSelection() {
+		var checkedRadio = document.querySelector("input[name='options']:checked");
+		var selected = checkedRadio ? checkedRadio.id : null;
+		var candidates = [
+			{ id: "#EDDDatepicker", option: "option1", isDate: true },
+			{ id: "#dateFromDatepicker", option: "option2", isDate: true },
+			{ id: "#gestationalAge", option: "option3", isDate: false },
+		];
+
+		// Re-trigger the first valid non-output field so calculate() runs with
+		// the new selection and rewrites the output field.
+		for (var i = 0; i < candidates.length; i++) {
+			var candidate = candidates[i];
+			if (candidate.option == selected) {
+				continue;
+			}
+			var val = $(candidate.id).val();
+			if (!val || val.replace(/\s/g, "") == "") {
+				continue;
+			}
+			var isValid = candidate.isDate ? validateDate(val).isValid() : textToGestationalAge(val) != null;
+			if (!isValid) {
+				continue;
+			}
+			if (candidate.isDate) {
+				$(candidate.id).datepicker("update");
+			} else {
+				$(candidate.id).trigger("input");
+			}
+			return;
+		}
+	}
+
+	$("input[name='options']").on("change", recomputeSelection);
 
 	$("#gestationalAge").on("input", function () {
 		var input = $(this).val();
