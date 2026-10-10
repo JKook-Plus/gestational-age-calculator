@@ -32,12 +32,13 @@
 				});
 			}, 4000);
 		</script>
-		<script src="assets/color_theme.js"></script>
+		<!-- The ?v= tags make browsers and Cloudflare fetch new copies. Change them, and VERSION in load.js, whenever these files change. -->
+		<script src="assets/color_theme.js?v=2026-10-10"></script>
 		<!-- Halfmoon is a drop-in replacement for Bootstrap's CSS. This copy holds only the rules the page uses. -->
 		<link rel="stylesheet" href="assets/vendor/halfmoon-2.0.1.trimmed.css" />
 		<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.10.0/css/bootstrap-datepicker.min.css" integrity="sha384-CC71RiODk4ecgf4v08/NxxkopdDktMR6TlgvcoNjnFGxJ3v7u2oKt/FAbUl2SzEs" crossorigin="anonymous" data-fallback="assets/vendor/bootstrap-datepicker-1.10.0.min.css" onerror="cssFallback(this)" />
 		<!-- Site overrides must come after the framework sheets they override -->
-		<link rel="stylesheet" href="assets/style.css" />
+		<link rel="stylesheet" href="assets/style.css?v=2026-10-10" />
 	</head>
 
 	<body>
@@ -145,6 +146,6 @@
 			</div>
 		</div>
 
-		<script src="assets/load.js"></script>
+		<script src="assets/load.js?v=2026-10-10"></script>
 	</body>
 </html>
