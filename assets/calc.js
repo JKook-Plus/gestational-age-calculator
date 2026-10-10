@@ -271,6 +271,11 @@
 		return date.format("DD/MM/YYYY");
 	}
 
+	// The calendar widget hands over plain Date objects at midnight UTC.
+	function fromJSDate(date) {
+		return moment.utc(date);
+	}
+
 	function formatDateLong(date) {
 		return date.format("MMMM DD YYYY");
 	}
@@ -286,6 +291,7 @@
 		formatGA: formatGA,
 		formatGAShort: formatGAShort,
 		formatDate: formatDate,
+		fromJSDate: fromJSDate,
 		formatDateLong: formatDateLong,
 	};
 });
