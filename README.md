@@ -1,18 +1,25 @@
 <h1 align="center">
 <sub>
-<img src="https://github.com/JKook-Plus/gestational-age-calculator/blob/main/assets/logo.png" height="38" width="38">
+<img src="assets/logo.webp" height="38" width="38" alt="">
 </sub>
 Gestational Age (GA) calculator
 </h1>
 
-A [website](https://ga.jkook.plus/) that can calculate a gestational age based off two values.
+A [website](https://ga.jkook.plus/) that works out a gestational age, a due date, or a date from the other two.
 
 ## Features
 
 - Live updating
-- Allows many written date formats
-- It works with only a few bugs
+- Accepts many written date formats, plus shortcuts such as `t` for today and `t+3`
+- Copy buttons for each value
+- A floating Picture-in-Picture window in Chromium browsers
 
-## TODO
+## Development
 
-- Fix bugs (:
+There is no build step. Serve the folder with any static file server and open `index.html`.
+
+The date and gestational age logic lives in `assets/calc.js` and has tests:
+
+```
+node --test
+```
