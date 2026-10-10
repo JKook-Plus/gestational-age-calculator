@@ -23,3 +23,13 @@ The date and gestational age logic lives in `assets/calc.js` and has tests:
 ```
 node --test
 ```
+
+Halfmoon's stylesheet is trimmed to the rules the page uses. After using a Halfmoon class that is not styled yet, regenerate it and keep the comment at the top of the file:
+
+```
+curl -sO https://cdn.jsdelivr.net/npm/halfmoon@2.0.1/css/halfmoon.min.css
+curl -sO https://cdn.jsdelivr.net/npm/halfmoon@2.0.1/css/cores/halfmoon.modern.css
+mkdir trimmed
+npx purgecss@6 --css halfmoon.min.css halfmoon.modern.css --content index.html assets/*.js assets/vendor/bootstrap-datepicker-1.10.0.min.js --output trimmed
+cat trimmed/halfmoon.min.css trimmed/halfmoon.modern.css > assets/vendor/halfmoon-2.0.1.trimmed.css
+```
