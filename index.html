@@ -4,103 +4,148 @@
 		<meta charset="UTF-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 		<title>Gestational Age Calculator - GA</title>
-		<link rel="icon" type="image/png" href="/assets/logo-small.png" />
-		<script src="/assets/color_theme.js"></script>
-		<!-- Halfmoon is a drop-in replacement for Bootstrap's CSS (Bootstrap's JS bundle is still loaded below) -->
-		<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/halfmoon@2.0.1/css/halfmoon.min.css" integrity="sha256-SsJizWSIG9JT9Qxbiy8xnYJfjCAkhEQ0hihxRn7jt2M=" crossorigin="anonymous" />
-		<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/halfmoon@2.0.1/css/cores/halfmoon.modern.css" integrity="sha256-DD6elX+jPmbFYPsGvzodUv2+9FHkxHlVtQi0/RJVULs=" crossorigin="anonymous" />
-		<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.10.0/css/bootstrap-datepicker.min.css" integrity="sha384-CC71RiODk4ecgf4v08/NxxkopdDktMR6TlgvcoNjnFGxJ3v7u2oKt/FAbUl2SzEs" crossorigin="anonymous" />
+		<meta name="description" content="Work out a gestational age, an estimated due date, or a date from the other two. Accepts typed dates and shortcuts, and updates as you type." />
+		<link rel="icon" type="image/png" href="assets/logo-small.png" />
+		<script>
+			// The Picture-in-Picture window shows this same page, loaded with ?pip=<id>.
+			if (/[?&]pip=/.test(location.search)) {
+				document.documentElement.classList.add("pip");
+			}
+
+			// Swap a CDN stylesheet for its copy in assets/vendor.
+			function cssFallback(link) {
+				var local = link.getAttribute("data-fallback");
+				if (!local) {
+					return;
+				}
+				link.removeAttribute("data-fallback");
+				link.removeAttribute("integrity");
+				link.removeAttribute("crossorigin");
+				link.href = local;
+			}
+			// A blocked CDN can hang instead of failing, which would hold up the whole page.
+			setTimeout(function () {
+				Array.prototype.forEach.call(document.querySelectorAll("link[data-fallback]"), function (link) {
+					if (!link.sheet) {
+						cssFallback(link);
+					}
+				});
+			}, 4000);
+		</script>
+		<script src="assets/color_theme.js"></script>
+		<!-- Halfmoon is a drop-in replacement for Bootstrap's CSS -->
+		<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/halfmoon@2.0.1/css/halfmoon.min.css" integrity="sha256-SsJizWSIG9JT9Qxbiy8xnYJfjCAkhEQ0hihxRn7jt2M=" crossorigin="anonymous" data-fallback="assets/vendor/halfmoon-2.0.1.min.css" onerror="cssFallback(this)" />
+		<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/halfmoon@2.0.1/css/cores/halfmoon.modern.css" integrity="sha256-DD6elX+jPmbFYPsGvzodUv2+9FHkxHlVtQi0/RJVULs=" crossorigin="anonymous" data-fallback="assets/vendor/halfmoon-2.0.1.modern.css" onerror="cssFallback(this)" />
+		<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.10.0/css/bootstrap-datepicker.min.css" integrity="sha384-CC71RiODk4ecgf4v08/NxxkopdDktMR6TlgvcoNjnFGxJ3v7u2oKt/FAbUl2SzEs" crossorigin="anonymous" data-fallback="assets/vendor/bootstrap-datepicker-1.10.0.min.css" onerror="cssFallback(this)" />
 		<!-- Site overrides must come after the framework sheets they override -->
-		<link rel="stylesheet" href="/assets/style.css" />
+		<link rel="stylesheet" href="assets/style.css" />
 	</head>
 
 	<body>
-		<div class="container-lg shadow min-vh-100">
-			<div class="h-100 align-items-start">
-				<div class="d-flex justify-content-between align-items-center">
-					<div>
-						<button id="colorToggle" class="btn mx-0" style="width: 80px; height: 40px; font-size: 10px" onclick="toggleDarkMode()" aria-label="Toggle between light and dark mode"></button>
-
-						<a href="https://github.com/JKook-Plus/gestational-age-calculator" class="" target="_blank">
-							<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" class="logo">
-								<path
-									d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"
-								/>
-							</svg>
-						</a>
-					</div>
-
-					<button id="pipToggle" class="btn mx-0" style="display: none; height: 40px" title="Open in a floating window (Picture-in-Picture)" aria-label="Open the calculator in a Picture-in-Picture window" aria-pressed="false">
-						<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" class="pip-icon" aria-hidden="true">
-							<path d="M19 11h-8v6h8v-6zm4 8V4.98C23 3.88 22.1 3 21 3H3c-1.1 0-2 .88-2 1.98V19c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2zm-2 .02H3V4.97h18v14.05z" />
+		<div class="container-lg shadow min-vh-100 page">
+			<div class="d-flex justify-content-between align-items-center site-head">
+				<div class="d-flex align-items-center">
+					<button id="colorToggle" type="button" class="btn mx-0 icon-btn" onclick="toggleDarkMode()" title="Switch between light and dark mode" aria-label="Switch between light and dark mode">
+						<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" class="icon-moon" aria-hidden="true">
+							<path d="M12 3a9 9 0 1 0 9 9c0-.46-.04-.92-.1-1.36a5.389 5.389 0 0 1-4.4 2.26 5.403 5.403 0 0 1-3.14-9.8c-.44-.06-.9-.1-1.36-.1z" />
+						</svg>
+						<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" class="icon-sun" aria-hidden="true">
+							<path
+								d="M12 7c-2.76 0-5 2.24-5 5s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5zM2 13h2c.55 0 1-.45 1-1s-.45-1-1-1H2c-.55 0-1 .45-1 1s.45 1 1 1zm18 0h2c.55 0 1-.45 1-1s-.45-1-1-1h-2c-.55 0-1 .45-1 1s.45 1 1 1zM11 2v2c0 .55.45 1 1 1s1-.45 1-1V2c0-.55-.45-1-1-1s-1 .45-1 1zm0 18v2c0 .55.45 1 1 1s1-.45 1-1v-2c0-.55-.45-1-1-1s-1 .45-1 1zM5.99 4.58a.996.996 0 0 0-1.41 0 .996.996 0 0 0 0 1.41l1.06 1.06c.39.39 1.03.39 1.41 0s.39-1.03 0-1.41L5.99 4.58zm12.37 12.37a.996.996 0 0 0-1.41 0 .996.996 0 0 0 0 1.41l1.06 1.06c.39.39 1.03.39 1.41 0a.996.996 0 0 0 0-1.41l-1.06-1.06zm1.06-10.96a.996.996 0 0 0 0-1.41.996.996 0 0 0-1.41 0l-1.06 1.06c-.39.39-.39 1.03 0 1.41s1.03.39 1.41 0l1.06-1.06zM7.05 18.36a.996.996 0 0 0 0-1.41.996.996 0 0 0-1.41 0l-1.06 1.06c-.39.39-.39 1.03 0 1.41s1.03.39 1.41 0l1.06-1.06z"
+							/>
 						</svg>
 					</button>
+
+					<a href="https://github.com/JKook-Plus/gestational-age-calculator" class="icon-link" target="_blank">
+						<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" class="logo">
+							<path
+								d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"
+							/>
+						</svg>
+					</a>
 				</div>
 
-				<div class="shadow justify-content-center mx-auto m-1 py-3 row flex-grow-1 rounded" style="padding-bottom: 30px">
-					<div>
-						<div align="center">
-							<img src="/assets/logo-small.png" height="50" width="50" alt="" style="display: inline" class="image-selector" />
-							<h1 class="inline-title">Gestational Age (GA) calculator</h1>
+				<button id="pipToggle" type="button" class="btn mx-0 icon-btn" style="display: none" title="Open in a floating window (Picture-in-Picture)" aria-label="Open the calculator in a Picture-in-Picture window" aria-pressed="false">
+					<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" class="pip-icon" aria-hidden="true">
+						<path d="M19 11h-8v6h8v-6zm4 8V4.98C23 3.88 22.1 3 21 3H3c-1.1 0-2 .88-2 1.98V19c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2zm-2 .02H3V4.97h18v14.05z" />
+					</svg>
+				</button>
+			</div>
+
+			<div class="shadow mx-auto m-1 py-3 px-3 rounded calc-card">
+				<div class="title-block">
+					<div class="title-line">
+						<img src="assets/logo-small.webp" height="50" width="50" alt="" class="image-selector" />
+						<h1 class="inline-title">Gestational Age (GA) calculator</h1>
+					</div>
+					<p class="mb-4 intro">Calculate a <a class="link-secondary" href="https://en.wikipedia.org/wiki/Gestational_age" target="_blank">gestational age</a> based off two values (live updating)</p>
+				</div>
+
+				<noscript><p class="load-error">This calculator needs JavaScript to run.</p></noscript>
+				<p id="loadError" class="load-error" hidden>The calculator could not load. Check your connection, then reload the page.</p>
+
+				<div id="selectionBar" role="group" aria-label="Choose which value to calculate" class="btn-group my-2 w-100">
+					<input type="radio" class="btn-check" name="options" id="option1" autocomplete="off" />
+					<label class="btn btn-outline-secondary" for="option1" aria-label="Calculate estimated due date">EDD</label>
+
+					<input type="radio" class="btn-check" name="options" id="option2" autocomplete="off" />
+					<label class="btn btn-outline-secondary" for="option2" aria-label="Calculate the calculation date">Date</label>
+
+					<input type="radio" class="btn-check" name="options" id="option3" autocomplete="off" checked="" />
+					<label class="btn btn-outline-secondary" for="option3" aria-label="Calculate gestational age">GA</label>
+				</div>
+
+				<div class="row fields">
+					<div class="col-12 col-md field" data-field="edd">
+						<div class="field-top">
+							<label class="py-1" for="EDDDatepicker">Estimated Due Date (EDD):</label>
+							<span class="calculated-tag">Calculated</span>
 						</div>
-						<p class="mb-4" style="text-align: center">Calculate a <a class="link-secondary" href="https://en.wikipedia.org/wiki/Gestational_age" target="_blank">gestational age</a> based off two values (live updating)</p>
+						<div class="field-input">
+							<input type="text" id="EDDDatepicker" class="form-control" placeholder="DD/MM/YYYY, 3 Jul or t+3" autocomplete="off" autocapitalize="off" spellcheck="false" />
+							<button type="button" class="btn mx-0 icon-btn calendar-btn" data-calendar="edd" title="Open the calendar" aria-label="Pick the estimated due date from a calendar">
+								<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" aria-hidden="true">
+									<path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20a2 2 0 0 0 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10zM9 14H7v-2h2v2zm4 0h-2v-2h2v2zm4 0h-2v-2h2v2zm-8 4H7v-2h2v2zm4 0h-2v-2h2v2zm4 0h-2v-2h2v2z" />
+								</svg>
+							</button>
+						</div>
+						<div class="invalid-feedback">Invalid date format</div>
+						<div class="copy-row" data-copies="edd"></div>
 					</div>
 
-					<div class="row">
-						<div id="selectionBar" role="group" aria-label="Choose which value to calculate" class="btn-group my-2">
-							<input type="radio" class="btn-check" name="options" id="option1" autocomplete="off" />
-							<label class="btn btn-outline-secondary" for="option1" aria-label="Calculate estimated due date">EDD</label>
-
-							<input type="radio" class="btn-check" name="options" id="option2" autocomplete="off" />
-							<label class="btn btn-outline-secondary" for="option2" aria-label="Calculate the from date">Date</label>
-
-							<input type="radio" class="btn-check" name="options" id="option3" autocomplete="off" checked="" />
-							<label class="btn btn-outline-secondary" for="option3" aria-label="Calculate gestational age">GA</label>
+					<div class="col-12 col-md field" data-field="date">
+						<div class="field-top">
+							<label class="py-1" for="dateFromDatepicker">Calculation date:</label>
+							<span class="calculated-tag">Calculated</span>
 						</div>
-
-						<div class="col date-input-group" id="EDDDatePickerGroup">
-							<label class="py-1" for="EDDDatepicker">Estimated Due Date (EDD): </label>
-							<input type="text" id="EDDDatepicker" class="form-control datepicker" placeholder="Estimated Due Date" />
-							<div class="invalid-feedback">Invalid date format</div>
-							<br />
-							<div class="d-flex">
-								<button class="btn mx-0 clipboard-btn btn-secondary flex-fill" id="estimated-due-date-text"></button>
-								<button class="btn mx-0 clipboard-btn btn-secondary flex-fill" id="estimated-due-date-word-text"></button>
-							</div>
+						<div class="field-input">
+							<input type="text" id="dateFromDatepicker" class="form-control" placeholder="DD/MM/YYYY, or t for today" autocomplete="off" autocapitalize="off" spellcheck="false" />
+							<button type="button" class="btn mx-0 icon-btn calendar-btn" data-calendar="date" title="Open the calendar" aria-label="Pick the calculation date from a calendar">
+								<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" aria-hidden="true">
+									<path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20a2 2 0 0 0 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10zM9 14H7v-2h2v2zm4 0h-2v-2h2v2zm4 0h-2v-2h2v2zm-8 4H7v-2h2v2zm4 0h-2v-2h2v2zm4 0h-2v-2h2v2z" />
+								</svg>
+							</button>
 						</div>
+						<div class="invalid-feedback">Invalid date format</div>
+						<div class="copy-row" data-copies="date"></div>
+					</div>
 
-						<div class="col date-input-group" id="dateFromDatepickerGroup">
-							<label class="py-1" for="dateFromDatepicker">At this date: </label>
-							<input type="text" id="dateFromDatepicker" class="form-control datepicker" placeholder="Calculate from this date" />
-							<div class="invalid-feedback">Invalid date format</div>
-							<br />
-							<div class="d-flex">
-								<button class="btn mx-0 clipboard-btn btn-secondary flex-fill" id="calculateDateText"></button>
-							</div>
+					<div class="col-12 col-md field" data-field="ga">
+						<div class="field-top">
+							<label class="py-1" for="gestationalAge">Gestational Age (Weeks+days):</label>
+							<span class="calculated-tag">Calculated</span>
 						</div>
-
-						<div class="col">
-							<label class="py-1" for="gestationalAge">Gestational Age (Weeks+days): </label>
-							<input type="text" id="gestationalAge" class="form-control" placeholder="Gestational Age" />
-							<div class="invalid-feedback">Invalid gestational age format</div>
-							<br />
-							<div class="d-flex">
-								<button class="btn mx-0 clipboard-btn btn-secondary flex-fill" id="gestationalAgeText"></button>
-							</div>
+						<div class="field-input">
+							<input type="text" id="gestationalAge" class="form-control" placeholder="39+2 or 39w2d" autocomplete="off" autocapitalize="off" spellcheck="false" />
 						</div>
-
-						<div class="row justify-content-top"></div>
+						<div class="invalid-feedback">Invalid gestational age format</div>
+						<div class="field-note" id="gestationalAgeNote"></div>
+						<div class="copy-row" data-copies="ga"></div>
 					</div>
 				</div>
 			</div>
 		</div>
 
-		<script src="https://code.jquery.com/jquery-3.6.4.min.js" integrity="sha384-UG8ao2jwOWB7/oDdObZc6ItJmwUkR/PfMyt9Qs5AwX7PsnYn1CRKCTWyncPTWvaS" crossorigin="anonymous"></script>
-		<script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.30.1/moment.min.js" integrity="sha384-KIix3a0qkeD2RPwPvpkJ+Knc91vkmDI+i2c7phIO+EfV3dpfDXIGSqQjpIaJXlR9" crossorigin="anonymous"></script>
-		<script src="https://cdn.jsdelivr.net/npm/bootstrap-datepicker@1.10.0/dist/js/bootstrap-datepicker.min.js" integrity="sha384-hrC0I6QUg0tSdzNW47DRT7ohgBLywmjg37cLYZbdXVZLJHwJhFfqo7ouWr5yfSmv" crossorigin="anonymous"></script>
-		<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL" crossorigin="anonymous"></script>
-
-		<script src="/assets/main.js" defer></script>
-		<script src="/assets/pip.js" defer></script>
+		<script src="assets/load.js"></script>
 	</body>
 </html>

@@ -7,21 +7,23 @@
 (() => {
 	"use strict";
 
-	const getStoredTheme = () => localStorage.getItem("theme");
-
-	const getPreferredTheme = () => {
-		const storedTheme = getStoredTheme();
-		if (storedTheme) {
-			return storedTheme;
+	// Storage can be blocked (strict cookie settings, some kiosks). Treat that as
+	// "no saved choice", and accept only the two values this page writes.
+	const getStoredTheme = () => {
+		try {
+			const stored = localStorage.getItem("theme");
+			return stored === "light" || stored === "dark" ? stored : null;
+		} catch (e) {
+			return null;
 		}
-
-		return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
 	};
 
+	const getPreferredTheme = () => {
+		return getStoredTheme() || (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+	};
+
+	// The toggle button's icon follows this attribute through CSS, so it can't go stale.
 	const setTheme = (theme) => {
-		if (theme === "auto") {
-			theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
-		}
 		document.documentElement.setAttribute("data-bs-theme", theme);
 	};
 
@@ -30,44 +32,24 @@
 
 	// Follow the OS setting only while the user hasn't made an explicit choice.
 	window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => {
-		const storedTheme = getStoredTheme();
-		if (storedTheme !== "light" && storedTheme !== "dark") {
+		if (!getStoredTheme()) {
 			setTheme(getPreferredTheme());
 		}
 	});
+
+	// Another copy of the page (a second tab, or the Picture-in-Picture window) changed the theme.
+	window.addEventListener("storage", (event) => {
+		if (event.key === "theme" || event.key === null) {
+			setTheme(getPreferredTheme());
+		}
+	});
+
+	// Toggle between light and dark, persisting the choice to localStorage.
+	window.toggleDarkMode = () => {
+		const next = document.documentElement.getAttribute("data-bs-theme") === "dark" ? "light" : "dark";
+		setTheme(next);
+		try {
+			localStorage.setItem("theme", next);
+		} catch (e) {}
+	};
 })();
-
-let defaultFlavorText = "Light/Dark<br />Mode";
-let darkFlavorText = "Wish You<br />Were Here";
-let lightFlavorText = "Day 3<br />1:3";
-
-// Update the toggle button's flavour text to match the active theme.
-function updateColorToggleText() {
-	var toggle = document.getElementById("colorToggle");
-	if (!toggle) {
-		return;
-	}
-
-	var theme = document.documentElement.getAttribute("data-bs-theme");
-	if (theme === "dark") {
-		toggle.innerHTML = lightFlavorText;
-	} else if (theme === "light") {
-		toggle.innerHTML = darkFlavorText;
-	} else {
-		toggle.innerHTML = defaultFlavorText;
-	}
-}
-
-document.addEventListener("DOMContentLoaded", updateColorToggleText);
-
-// Toggle between light and dark, persisting the choice to localStorage.
-function toggleDarkMode() {
-	var current = document.documentElement.getAttribute("data-bs-theme");
-	var next = current === "dark" ? "light" : "dark";
-
-	document.documentElement.setAttribute("data-bs-theme", next);
-	try {
-		localStorage.setItem("theme", next);
-	} catch (e) {}
-	updateColorToggleText();
-}

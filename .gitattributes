@@ -1,0 +1,2 @@
+# Third-party files are kept byte for byte as published.
+assets/vendor/** -text

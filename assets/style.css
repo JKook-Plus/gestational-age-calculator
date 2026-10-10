@@ -1,10 +1,17 @@
-/* Dark mode styles */
+/* Site overrides on top of Halfmoon and bootstrap-datepicker */
 
-.notClickable {
-    pointer-events: none;
-    opacity: 0;
-    /* Keeps the button out of the keyboard tab order while preserving layout */
-    visibility: hidden;
+:root {
+    --ga-tint: rgba(53, 66, 201, 0.09);
+    --ga-tint: color-mix(in srgb, var(--bs-primary) 9%, transparent);
+    --ga-amber: #9a5b00;
+    --ga-ok: #1d7a46;
+}
+
+[data-bs-theme="dark"] {
+    --ga-tint: rgba(76, 194, 255, 0.15);
+    --ga-tint: color-mix(in srgb, var(--bs-primary) 15%, transparent);
+    --ga-amber: #f2b45a;
+    --ga-ok: #6fd39c;
 }
 
 .image-selector {
@@ -16,20 +23,159 @@
     -ms-user-select: none;
 }
 
+.title-line {
+    text-align: center;
+}
+
 .inline-title{
-    text-align: center; 
-    vertical-align: middle; 
-    line-height: 50px; 
+    text-align: center;
+    vertical-align: middle;
+    line-height: 50px;
     display: inline-block;
 }
 
+.intro {
+    text-align: center;
+}
+
+.load-error {
+    margin: 0 0 1rem;
+    text-align: center;
+    color: var(--bs-form-invalid-color, #ab2121);
+}
+
+/* Icon buttons: page header and the calendar buttons beside the date fields */
+.icon-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+    width: 40px;
+    height: 40px;
+    padding: 0;
+}
+
+.icon-btn svg {
+    fill: var(--bs-secondary);
+}
+
+.icon-link {
+    display: inline-flex;
+    padding: 0 4px;
+}
+
+/* The theme button shows the mode it switches to */
+.icon-sun {
+    display: none;
+}
+
+[data-bs-theme="dark"] .icon-sun {
+    display: block;
+}
+
+[data-bs-theme="dark"] .icon-moon {
+    display: none;
+}
+
+/* The three fields */
+.field {
+    margin-top: 0.25rem;
+}
+
+.field-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 8px;
+}
+
+.field-input {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.field-input .form-control {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+/* The value the calculator worked out, as opposed to the two that were entered */
+.calculated-tag {
+    display: none;
+    padding: 1px 8px;
+    border-radius: 999px;
+    background-color: var(--ga-tint);
+    font-size: 0.75em;
+    white-space: nowrap;
+}
+
+.field.is-out .calculated-tag {
+    display: inline-block;
+}
+
+.field.is-out .form-control,
+.field.is-out .form-control:focus {
+    background-color: var(--ga-tint);
+    background-image: none;
+    border-color: transparent;
+}
+
+.field.is-bad .invalid-feedback {
+    display: block;
+}
+
+.field-note {
+    display: none;
+    margin-top: 0.25rem;
+    font-size: 0.875em;
+    color: var(--ga-amber);
+}
+
+.field.is-warn .field-note {
+    display: block;
+}
+
+.field.is-warn .form-control,
+.field.is-warn .form-control:focus {
+    border-color: var(--ga-amber);
+}
+
+/* Copy buttons. Each shows exactly the text it copies. */
+.copy-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 0.75rem;
+    /* Keeps the card from jumping as results appear */
+    min-height: 2.25rem;
+}
+
+.copy-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.copy-icon {
+    flex: none;
+    fill: currentColor;
+    opacity: 0.7;
+}
+
+.copy-chip.copied {
+    border-color: var(--ga-ok);
+    color: var(--ga-ok);
+}
+
+/* Calendar */
 td.day {
     min-width: 34px;
     line-height: 20px;
 }
 
 .datepicker td,
-th {
+.datepicker th {
     text-align: center;
     padding: 3px 6px;
     font-size: 14px;
@@ -116,67 +262,191 @@ th {
     fill: var(--bs-secondary);
 }
 
-/* Picture-in-Picture panel (rendered inside the PiP window) */
-.pip-body {
-    margin: 0;
+/* Phones, and the Picture-in-Picture window: one field per row */
+@media (max-width: 767.98px) {
+    .title-line .image-selector {
+        width: 36px;
+        height: 36px;
+    }
+
+    .inline-title {
+        font-size: 1.35rem;
+        line-height: 1.25;
+        margin-bottom: 0;
+        vertical-align: middle;
+    }
+
+    .intro {
+        margin-top: 0.5rem;
+    }
+
+    #selectionBar .btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 44px;
+    }
+
+    .field {
+        margin-top: 0.75rem;
+    }
+
+    /* 16px keeps iOS from zooming the page when a field is focused */
+    .field-input .form-control {
+        min-height: 44px;
+        font-size: 16px;
+    }
+
+    .icon-btn {
+        width: 44px;
+        height: 44px;
+    }
+
+    .copy-row {
+        margin-top: 0.5rem;
+        min-height: 0;
+    }
+
+    .copy-chip {
+        min-height: 36px;
+    }
+
+    /* The calendar opens as a sheet at the bottom, so it always fits the screen */
+    .datepicker.datepicker-dropdown {
+        position: fixed !important;
+        top: auto !important;
+        right: 0 !important;
+        bottom: 0 !important;
+        left: 0 !important;
+        z-index: 2000 !important;
+        width: min(100%, 400px);
+        max-width: none;
+        margin: 0 auto;
+        padding: 10px 12px 14px;
+        border-radius: 14px 14px 0 0;
+        box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.3);
+    }
+
+    .datepicker-dropdown::before,
+    .datepicker-dropdown::after {
+        display: none !important;
+    }
+
+    .datepicker table {
+        width: 100%;
+        border-spacing: 2px;
+    }
+
+    .datepicker td,
+    .datepicker th {
+        height: 40px;
+        min-width: 0;
+        font-size: 15px;
+    }
+
+    body.calendar-open::after {
+        content: "";
+        position: fixed;
+        inset: 0;
+        z-index: 1999;
+        background: rgba(10, 16, 24, 0.45);
+    }
 }
 
-.pip-wrapper {
-    box-sizing: border-box;
-    min-height: 100vh;
-    padding: 14px 16px;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+@media (max-width: 767.98px) and (prefers-reduced-motion: no-preference) {
+    .datepicker.datepicker-dropdown {
+        animation: calendar-sheet 0.16s ease-out;
+    }
+
+    @keyframes calendar-sheet {
+        from {
+            transform: translateY(24px);
+            opacity: 0;
+        }
+    }
 }
 
-.pip-title {
-    margin: 0;
+/* The copy of the page inside the Picture-in-Picture window: no page chrome, tighter spacing */
+/* !important because the header carries a display utility class */
+.pip .site-head {
+    display: none !important;
+}
+
+.pip .intro,
+.pip .title-line .image-selector {
+    display: none;
+}
+
+.pip .page {
+    min-height: 0 !important;
+    padding: 0;
+    box-shadow: none !important;
+}
+
+.pip .calc-card {
+    margin: 0 !important;
+    padding: 10px 14px 12px !important;
+    box-shadow: none !important;
+}
+
+.pip .inline-title {
     font-size: 1rem;
     font-weight: 600;
-    text-align: center;
+    line-height: 1.3;
+    margin: 0 0 4px;
 }
 
-.pip-selector {
-    align-self: center;
+.pip #selectionBar {
+    margin-top: 0.25rem !important;
+    margin-bottom: 0 !important;
 }
 
-.pip-field {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
+.pip #selectionBar .btn {
+    min-height: 32px;
+    padding-top: 0;
+    padding-bottom: 0;
+    font-size: 0.85rem;
 }
 
-.pip-field .form-label {
-    margin: 0;
-    font-size: 0.75rem;
-    opacity: 0.8;
+.pip .field {
+    margin-top: 0.5rem;
 }
 
-.pip-copies {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
+.pip .field label {
+    padding-top: 0 !important;
+    padding-bottom: 2px !important;
+    font-size: 0.8rem;
+}
+
+.pip .field-input .form-control {
+    min-height: 32px;
+    padding-top: 3px;
+    padding-bottom: 3px;
+    font-size: 0.875rem;
+}
+
+.pip .icon-btn {
+    width: 32px;
+    height: 32px;
+}
+
+.pip .icon-btn svg {
+    width: 18px;
+    height: 18px;
+}
+
+.pip .copy-row {
     margin-top: 4px;
 }
 
-.pip-copy {
-    display: inline-flex;
-    align-items: center;
-    justify-content: flex-start;
-    width: 100%;
-    min-width: 0;
-    overflow: hidden;
-    white-space: nowrap;
+.pip .copy-chip {
+    min-height: 28px;
+    padding: 0 8px;
+    font-size: 0.82rem;
 }
 
-.pip-copy .pip-copy-text {
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.pip-copy-icon {
-    flex-shrink: 0;
-    margin-right: 6px;
+.pip .datepicker td,
+.pip .datepicker th {
+    height: 31px;
+    font-size: 13px;
 }
