@@ -38,48 +38,50 @@
 		<link rel="stylesheet" href="assets/vendor/halfmoon-2.0.1.trimmed.css" />
 		<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.10.0/css/bootstrap-datepicker.min.css" integrity="sha384-CC71RiODk4ecgf4v08/NxxkopdDktMR6TlgvcoNjnFGxJ3v7u2oKt/FAbUl2SzEs" crossorigin="anonymous" data-fallback="assets/vendor/bootstrap-datepicker-1.10.0.min.css" onerror="cssFallback(this)" />
 		<!-- Site overrides must come after the framework sheets they override -->
-		<link rel="stylesheet" href="assets/style.css?v=2026-10-10" />
+		<link rel="stylesheet" href="assets/style.css?v=2026-10-11" />
 	</head>
 
 	<body>
 		<div class="container-lg shadow min-vh-100 page">
-			<div class="d-flex justify-content-between align-items-center site-head">
-				<div class="d-flex align-items-center">
-					<button id="colorToggle" type="button" class="btn mx-0 icon-btn" onclick="toggleDarkMode()" title="Switch between light and dark mode" aria-label="Switch between light and dark mode">
-						<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" class="icon-moon" aria-hidden="true">
-							<path d="M12 3a9 9 0 1 0 9 9c0-.46-.04-.92-.1-1.36a5.389 5.389 0 0 1-4.4 2.26 5.403 5.403 0 0 1-3.14-9.8c-.44-.06-.9-.1-1.36-.1z" />
-						</svg>
-						<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" class="icon-sun" aria-hidden="true">
+			<!-- Header icons: Phosphor (MIT), https://phosphoricons.com -->
+			<header class="site-head">
+				<div class="brand">
+					<img src="assets/logo-small.webp" height="20" width="20" alt="" class="image-selector" />
+					<h1>Gestational age calculator</h1>
+				</div>
+
+				<div class="tools">
+					<button id="colorToggle" type="button" class="head-btn" onclick="toggleDarkMode()" title="Switch between light and dark mode" aria-label="Switch between light and dark mode">
+						<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" class="icon-moon" aria-hidden="true">
 							<path
-								d="M12 7c-2.76 0-5 2.24-5 5s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5zM2 13h2c.55 0 1-.45 1-1s-.45-1-1-1H2c-.55 0-1 .45-1 1s.45 1 1 1zm18 0h2c.55 0 1-.45 1-1s-.45-1-1-1h-2c-.55 0-1 .45-1 1s.45 1 1 1zM11 2v2c0 .55.45 1 1 1s1-.45 1-1V2c0-.55-.45-1-1-1s-1 .45-1 1zm0 18v2c0 .55.45 1 1 1s1-.45 1-1v-2c0-.55-.45-1-1-1s-1 .45-1 1zM5.99 4.58a.996.996 0 0 0-1.41 0 .996.996 0 0 0 0 1.41l1.06 1.06c.39.39 1.03.39 1.41 0s.39-1.03 0-1.41L5.99 4.58zm12.37 12.37a.996.996 0 0 0-1.41 0 .996.996 0 0 0 0 1.41l1.06 1.06c.39.39 1.03.39 1.41 0a.996.996 0 0 0 0-1.41l-1.06-1.06zm1.06-10.96a.996.996 0 0 0 0-1.41.996.996 0 0 0-1.41 0l-1.06 1.06c-.39.39-.39 1.03 0 1.41s1.03.39 1.41 0l1.06-1.06zM7.05 18.36a.996.996 0 0 0 0-1.41.996.996 0 0 0-1.41 0l-1.06 1.06c-.39.39-.39 1.03 0 1.41s1.03.39 1.41 0l1.06-1.06z"
+								d="M233.54,142.23a8,8,0,0,0-8-2,88.08,88.08,0,0,1-109.8-109.8,8,8,0,0,0-10-10,104.84,104.84,0,0,0-52.91,37A104,104,0,0,0,136,224a103.09,103.09,0,0,0,62.52-20.88,104.84,104.84,0,0,0,37-52.91A8,8,0,0,0,233.54,142.23ZM188.9,190.34A88,88,0,0,1,65.66,67.11a89,89,0,0,1,31.4-26A106,106,0,0,0,96,56,104.11,104.11,0,0,0,200,160a106,106,0,0,0,14.92-1.06A89,89,0,0,1,188.9,190.34Z"
+							/>
+						</svg>
+						<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" class="icon-sun" aria-hidden="true">
+							<path
+								d="M120,40V16a8,8,0,0,1,16,0V40a8,8,0,0,1-16,0Zm72,88a64,64,0,1,1-64-64A64.07,64.07,0,0,1,192,128Zm-16,0a48,48,0,1,0-48,48A48.05,48.05,0,0,0,176,128ZM58.34,69.66A8,8,0,0,0,69.66,58.34l-16-16A8,8,0,0,0,42.34,53.66Zm0,116.68-16,16a8,8,0,0,0,11.32,11.32l16-16a8,8,0,0,0-11.32-11.32ZM192,72a8,8,0,0,0,5.66-2.34l16-16a8,8,0,0,0-11.32-11.32l-16,16A8,8,0,0,0,192,72Zm5.66,114.34a8,8,0,0,0-11.32,11.32l16,16a8,8,0,0,0,11.32-11.32ZM48,128a8,8,0,0,0-8-8H16a8,8,0,0,0,0,16H40A8,8,0,0,0,48,128Zm80,80a8,8,0,0,0-8,8v24a8,8,0,0,0,16,0V216A8,8,0,0,0,128,208Zm112-88H216a8,8,0,0,0,0,16h24a8,8,0,0,0,0-16Z"
 							/>
 						</svg>
 					</button>
 
-					<a href="https://github.com/JKook-Plus/gestational-age-calculator" class="icon-link" target="_blank">
-						<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" class="logo">
+					<button id="pipToggle" type="button" class="head-btn" style="display: none" title="Open in a floating window (Picture-in-Picture)" aria-label="Open the calculator in a Picture-in-Picture window" aria-pressed="false">
+						<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" aria-hidden="true">
+							<path d="M216,48H40A16,16,0,0,0,24,64V192a16,16,0,0,0,16,16H216a16,16,0,0,0,16-16V64A16,16,0,0,0,216,48ZM40,64H216v56H136a8,8,0,0,0-8,8v64H40ZM216,192H144V136h72v56Z" />
+						</svg>
+					</button>
+
+					<a href="https://github.com/JKook-Plus/gestational-age-calculator" class="head-btn" target="_blank" rel="noopener" title="Source code on GitHub" aria-label="Source code on GitHub">
+						<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" aria-hidden="true">
 							<path
-								d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"
+								d="M208.31,75.68A59.78,59.78,0,0,0,202.93,28,8,8,0,0,0,196,24a59.75,59.75,0,0,0-48,24H124A59.75,59.75,0,0,0,76,24a8,8,0,0,0-6.93,4,59.78,59.78,0,0,0-5.38,47.68A58.14,58.14,0,0,0,56,104v8a56.06,56.06,0,0,0,48.44,55.47A39.8,39.8,0,0,0,96,192v8H72a24,24,0,0,1-24-24A40,40,0,0,0,8,136a8,8,0,0,0,0,16,24,24,0,0,1,24,24,40,40,0,0,0,40,40H96v16a8,8,0,0,0,16,0V192a24,24,0,0,1,48,0v40a8,8,0,0,0,16,0V192a39.8,39.8,0,0,0-8.44-24.53A56.06,56.06,0,0,0,216,112v-8A58.14,58.14,0,0,0,208.31,75.68ZM200,112a40,40,0,0,1-40,40H112a40,40,0,0,1-40-40v-8a41.74,41.74,0,0,1,6.9-22.48A8,8,0,0,0,80,73.83a43.81,43.81,0,0,1,.79-33.58,43.88,43.88,0,0,1,32.32,20.06A8,8,0,0,0,119.82,64h32.35a8,8,0,0,0,6.74-3.69,43.87,43.87,0,0,1,32.32-20.06A43.81,43.81,0,0,1,192,73.83a8.09,8.09,0,0,0,1,7.65A41.72,41.72,0,0,1,200,104Z"
 							/>
 						</svg>
 					</a>
 				</div>
-
-				<button id="pipToggle" type="button" class="btn mx-0 icon-btn" style="display: none" title="Open in a floating window (Picture-in-Picture)" aria-label="Open the calculator in a Picture-in-Picture window" aria-pressed="false">
-					<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" class="pip-icon" aria-hidden="true">
-						<path d="M19 11h-8v6h8v-6zm4 8V4.98C23 3.88 22.1 3 21 3H3c-1.1 0-2 .88-2 1.98V19c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2zm-2 .02H3V4.97h18v14.05z" />
-					</svg>
-				</button>
-			</div>
+			</header>
 
 			<div class="shadow mx-auto m-1 py-3 px-3 rounded calc-card">
-				<div class="title-block">
-					<div class="title-line">
-						<img src="assets/logo-small.webp" height="50" width="50" alt="" class="image-selector" />
-						<h1 class="inline-title">Gestational Age (GA) calculator</h1>
-					</div>
-					<p class="mb-4 intro">Calculate a <a class="link-secondary" href="https://en.wikipedia.org/wiki/Gestational_age" target="_blank">gestational age</a> based off two values (live updating)</p>
-				</div>
+				<p class="mb-4 intro">Calculate a <a class="link-secondary" href="https://en.wikipedia.org/wiki/Gestational_age" target="_blank">gestational age</a> based off two values (live updating)</p>
 
 				<noscript><p class="load-error">This calculator needs JavaScript to run.</p></noscript>
 				<p id="loadError" class="load-error" hidden>The calculator could not load. Check your connection, then reload the page.</p>
