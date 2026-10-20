@@ -11,8 +11,30 @@
 			if (/[?&]pip=/.test(location.search)) {
 				document.documentElement.classList.add("pip");
 			}
+
+			// Show the load error when one of the site's own scripts (under assets/) fails to load.
+			// Scripts added from elsewhere are left alone: ad blockers often block the analytics
+			// beacon Cloudflare adds, and the calculator works without it.
+			window.addEventListener(
+				"error",
+				function (event) {
+					var script = event.target;
+					if (!script || script.tagName !== "SCRIPT" || !/^assets\//.test(script.getAttribute("src") || "")) {
+						return;
+					}
+					function show() {
+						document.getElementById("loadError").hidden = false;
+					}
+					if (document.readyState === "loading") {
+						document.addEventListener("DOMContentLoaded", show);
+					} else {
+						show();
+					}
+				},
+				true
+			);
 		</script>
-		<!-- The ?v= tags make browsers and Cloudflare fetch new copies. Change them, and VERSION in load.js, whenever these files change. -->
+		<!-- The ?v= tags make browsers and Cloudflare fetch new copies. Change a file's tag whenever the file changes. -->
 		<script src="assets/color_theme.js?v=2026-10-10"></script>
 		<!-- Halfmoon is a drop-in replacement for Bootstrap's CSS. This copy holds only the rules the page uses. -->
 		<link rel="stylesheet" href="assets/vendor/halfmoon-2.0.1.trimmed.css" />
@@ -20,6 +42,15 @@
 		<!-- Site overrides must come after the framework sheets they override -->
 		<link rel="stylesheet" href="assets/style.css?v=2026-10-11" />
 		<link rel="stylesheet" href="assets/calendar.css?v=2026-10-20" />
+		<!-- Deferred scripts download side by side and run in this order once the page has been read. -->
+		<script defer src="assets/vendor/jquery-3.7.1.min.js"></script>
+		<script defer src="assets/vendor/moment-2.30.1.min.js"></script>
+		<script defer src="assets/vendor/bootstrap-datepicker-1.10.0.min.js"></script>
+		<script defer src="assets/calc.js?v=2026-10-20"></script>
+		<script defer src="assets/main.js?v=2026-10-20"></script>
+		<script defer src="assets/pip.js?v=2026-10-20.2"></script>
+		<script defer src="assets/weeks.js?v=2026-10-20"></script>
+		<script defer src="assets/calendar.js?v=2026-10-20"></script>
 	</head>
 
 	<body>
@@ -213,7 +244,5 @@
 				</div>
 			</dialog>
 		</div>
-
-		<script src="assets/load.js?v=2026-10-20.2"></script>
 	</body>
 </html>
