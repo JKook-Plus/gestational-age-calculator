@@ -19,6 +19,8 @@ A [website](https://ga.jkook.plus/) that works out a gestational age, a due date
 
 There is no build step. Serve the folder with any static file server and open `index.html`.
 
+The libraries (jQuery, Moment.js, bootstrap-datepicker and Halfmoon) are copies in `assets/vendor`, served by the site itself rather than a CDN.
+
 The date and gestational age logic lives in `assets/calc.js`, and the week calendar's arithmetic in `assets/weeks.js`. Both have tests:
 
 ```
