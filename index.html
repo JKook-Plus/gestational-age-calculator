@@ -11,32 +11,12 @@
 			if (/[?&]pip=/.test(location.search)) {
 				document.documentElement.classList.add("pip");
 			}
-
-			// Swap a CDN stylesheet for its copy in assets/vendor.
-			function cssFallback(link) {
-				var local = link.getAttribute("data-fallback");
-				if (!local) {
-					return;
-				}
-				link.removeAttribute("data-fallback");
-				link.removeAttribute("integrity");
-				link.removeAttribute("crossorigin");
-				link.href = local;
-			}
-			// A blocked CDN can hang instead of failing, which would hold up the whole page.
-			setTimeout(function () {
-				Array.prototype.forEach.call(document.querySelectorAll("link[data-fallback]"), function (link) {
-					if (!link.sheet) {
-						cssFallback(link);
-					}
-				});
-			}, 4000);
 		</script>
 		<!-- The ?v= tags make browsers and Cloudflare fetch new copies. Change them, and VERSION in load.js, whenever these files change. -->
 		<script src="assets/color_theme.js?v=2026-10-10"></script>
 		<!-- Halfmoon is a drop-in replacement for Bootstrap's CSS. This copy holds only the rules the page uses. -->
 		<link rel="stylesheet" href="assets/vendor/halfmoon-2.0.1.trimmed.css" />
-		<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.10.0/css/bootstrap-datepicker.min.css" integrity="sha384-CC71RiODk4ecgf4v08/NxxkopdDktMR6TlgvcoNjnFGxJ3v7u2oKt/FAbUl2SzEs" crossorigin="anonymous" data-fallback="assets/vendor/bootstrap-datepicker-1.10.0.min.css" onerror="cssFallback(this)" />
+		<link rel="stylesheet" href="assets/vendor/bootstrap-datepicker-1.10.0.min.css" />
 		<!-- Site overrides must come after the framework sheets they override -->
 		<link rel="stylesheet" href="assets/style.css?v=2026-10-11" />
 		<link rel="stylesheet" href="assets/calendar.css?v=2026-10-20" />
@@ -234,6 +214,6 @@
 			</dialog>
 		</div>
 
-		<script src="assets/load.js?v=2026-10-20"></script>
+		<script src="assets/load.js?v=2026-10-20.2"></script>
 	</body>
 </html>
