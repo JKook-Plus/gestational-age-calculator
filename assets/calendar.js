@@ -26,12 +26,17 @@
 
 	// The saved choice: "off" (the default), "month" or "pregnancy". Kept in
 	// localStorage like the theme and followed across tabs. Storage can be
-	// blocked, in which case the choice lasts until the page is closed.
+	// blocked, or full, in which case the choice lasts until the page is closed.
 	var setting = (function (key, allowed) {
 		var memory = null;
+		// False once a write has failed: from then on the choice lives in memory.
+		var writable = true;
 		var listeners = [];
 
 		function read() {
+			if (!writable) {
+				return memory;
+			}
 			try {
 				return localStorage.getItem(key);
 			} catch (e) {
@@ -62,7 +67,9 @@
 				memory = value;
 				try {
 					localStorage.setItem(key, value);
-				} catch (e) {}
+				} catch (e) {
+					writable = false;
+				}
 				listeners.forEach(function (listener) {
 					listener(value);
 				});
@@ -73,7 +80,10 @@
 		};
 	})("weekCalendar", ["off", "month", "pregnancy"]);
 	// 42+6, the last day the calendar counts as inside the pregnancy.
-	var LAST_DAY = (W.LAST_WEEK + 1) * 7 - 1;
+	var LAST_DAY = W.LAST_DAY;
+	// While a field is being typed in, the calendar waits this long after the
+	// last change, so half-typed dates do not flick it between states.
+	var TYPING_PAUSE_MS = 300;
 	var HINTS = {
 		off: "No calendar under the calculator.",
 		month: "One month, opening on the calculation date or today. Arrows move between months.",
@@ -112,6 +122,11 @@
 	var focusMonth = null;
 	// Set when the user picks Whole pregnancy: the focus month is scrolled into view once the dialog closes.
 	var scrollPending = false;
+	// What the calendar last drew. A redraw that would draw the same is skipped.
+	var drawn = null;
+	var typingTimer = null;
+	// The calculator's three fields.
+	var fields = ["EDDDatepicker", "dateFromDatepicker", "gestationalAge"].map($);
 
 	// Monday first, like the date picker.
 	var WEEKDAYS = [1, 2, 3, 4, 5, 6, 0];
@@ -122,9 +137,7 @@
 
 	// ---- Dates ----
 
-	function monthNumber(date) {
-		return date.year() * 12 + date.month();
-	}
+	var monthNumber = W.monthNumber;
 
 	function monthStart(number) {
 		return window.moment.utc([Math.floor(number / 12), number % 12, 1]);
@@ -142,11 +155,6 @@
 		return n + " " + word + (n === 1 ? "" : "s");
 	}
 
-	// "22 weeks 5 days", the form used in day names.
-	function gaWords(days) {
-		return count(Math.floor(days / 7), "week") + " " + count(days % 7, "day");
-	}
-
 	// "17 weeks 2 days", "3 days" or "6 weeks", for a span of time.
 	function spanWords(days) {
 		var weeks = Math.floor(days / 7);
@@ -161,15 +169,6 @@
 		return date.format("dddd D MMMM YYYY");
 	}
 
-	function milestoneOn(days) {
-		for (var i = 0; i < W.MILESTONES.length; i++) {
-			if (W.MILESTONES[i].days === days) {
-				return W.MILESTONES[i];
-			}
-		}
-		return null;
-	}
-
 	// ---- Drawing ----
 
 	function dayHtml(p, date) {
@@ -179,7 +178,7 @@
 		var isToday = W.sameDay(date, p.today);
 		var isDue = days === W.TERM_DAYS;
 		var weekStart = inside && days % 7 === 0;
-		var milestone = inside ? milestoneOn(days) : null;
+		var milestone = inside ? W.milestoneOn(days) : null;
 
 		var classes = "wk-day";
 		classes += inside ? " is-t" + W.trimester(days).number : " is-out";
@@ -190,7 +189,7 @@
 
 		var name = [longDate(date)];
 		if (inside) {
-			name.push(gaWords(days));
+			name.push(window.GACalc.formatGA(days));
 		} else {
 			name.push(days < 0 ? "before the pregnancy" : "after 42 weeks 6 days");
 		}
@@ -276,15 +275,15 @@
 			['<span class="wk-key wk-key-text">22+0</span>', "First day of a week"],
 		];
 		if (p.focusIsToday) {
-			keys.push(['<span class="wk-key wk-key-focus wk-key-today"></span>', "Today"]);
+			keys.push(['<span class="wk-key wk-key-focus wk-key-today"></span>', "Today", ".is-focus"]);
 		} else {
-			keys.push(['<span class="wk-key wk-key-focus"></span>', "Calculation date"]);
-			keys.push(['<span class="wk-key wk-key-today"></span>', "Today"]);
+			keys.push(['<span class="wk-key wk-key-focus"></span>', "Calculation date", ".is-focus"]);
+			keys.push(['<span class="wk-key wk-key-today"></span>', "Today", ".is-today"]);
 		}
-		keys.push(['<span class="wk-key wk-key-due"></span>', "Due date, " + W.shortDate(p.edd, true)]);
+		keys.push(['<span class="wk-key wk-key-due"></span>', "Due date, " + W.shortDate(p.edd, true), ".is-due"]);
 		legend.innerHTML = keys
 			.map(function (key) {
-				return '<li><span class="wk-key-box" aria-hidden="true">' + key[0] + "</span>" + key[1] + "</li>";
+				return "<li" + (key[2] ? ' data-wk-shows="' + key[2] + '"' : "") + '><span class="wk-key-box" aria-hidden="true">' + key[0] + "</span>" + key[1] + "</li>";
 			})
 			.join("");
 	}
@@ -293,18 +292,23 @@
 		button.setAttribute("aria-disabled", disabled ? "true" : "false");
 	}
 
+	// The month "This month" opens on: the focus month, or the nearest month of
+	// the pregnancy when the focus is far outside it (an old due date, say).
+	function homeMonth() {
+		return Math.min(Math.max(focusMonth, bounds.min), bounds.max);
+	}
+
 	function drawMonth(p) {
-		bounds = {
-			min: Math.min(monthNumber(p.start), focusMonth),
-			max: Math.max(monthNumber(W.dateOf(p, LAST_DAY)), focusMonth),
-		};
+		// The same months the whole-pregnancy view draws.
+		var span = W.monthRange(p);
+		bounds = { min: span.first, max: span.last };
 		if (view !== null) {
 			view = Math.min(Math.max(view, bounds.min), bounds.max);
-			if (view === focusMonth) {
+			if (view === homeMonth()) {
 				view = null;
 			}
 		}
-		var shown = view === null ? focusMonth : view;
+		var shown = view === null ? homeMonth() : view;
 		nav.hidden = false;
 		monthTitle.textContent = monthStart(shown).format("MMMM YYYY");
 		setDisabled(prevBtn, shown <= bounds.min);
@@ -312,26 +316,23 @@
 		months.className = "wk-months-list is-single";
 		months.innerHTML = monthHtml(p, shown, false);
 		back.hidden = view === null;
-		backText.textContent = p.focusIsToday ? "Back to today" : "Back to " + W.shortDate(p.focus);
-		back.title = p.focusIsToday ? "Show this month again" : "Show the month of the calculation date again";
+		if (homeMonth() !== focusMonth) {
+			// The focus is too far away to show, so "back" is the nearest month of the pregnancy.
+			backText.textContent = "Back to " + monthStart(homeMonth()).format("MMMM YYYY");
+			back.title = "Show the nearest month of the pregnancy again";
+		} else {
+			backText.textContent = p.focusIsToday ? "Back to today" : "Back to " + W.shortDate(p.focus);
+			back.title = p.focusIsToday ? "Show this month again" : "Show the month of the calculation date again";
+		}
 	}
 
-	// Months from 0+0 to 42+6. A focus a little outside them (a date past 42 weeks,
-	// say) adds its month, so the focus is always drawn; one years away does not.
-	var REACH_MONTHS = 6;
-
+	// Every month from 0+0 to 42+6, and the focus month when it is close by.
 	function drawAll(p) {
 		bounds = null;
 		nav.hidden = true;
-		var first = monthNumber(p.start);
-		var last = monthNumber(W.dateOf(p, LAST_DAY));
-		if (focusMonth < first && first - focusMonth <= REACH_MONTHS) {
-			first = focusMonth;
-		} else if (focusMonth > last && focusMonth - last <= REACH_MONTHS) {
-			last = focusMonth;
-		}
+		var span = W.monthRange(p);
 		var html = "";
-		for (var n = first; n <= last; n++) {
+		for (var n = span.first; n <= span.last; n++) {
 			html += monthHtml(p, n, true);
 		}
 		months.className = "wk-months-list is-all";
@@ -339,6 +340,10 @@
 		backText.textContent = p.focusIsToday ? "Go to today" : "Go to " + W.shortDate(p.focus);
 		back.title = p.focusIsToday ? "Scroll to this month" : "Scroll to the month of the calculation date";
 		showGoTo();
+		// A focus or today far from the pregnancy is not drawn, so its key goes too.
+		Array.prototype.forEach.call(legend.querySelectorAll("[data-wk-shows]"), function (item) {
+			item.hidden = !months.querySelector(item.getAttribute("data-wk-shows"));
+		});
 	}
 
 	// "Go to" scrolls the page to the focus month. It stays put whenever that
@@ -354,7 +359,14 @@
 		hint.textContent = HINTS[mode];
 	}
 
+	// Everything a redraw depends on. Midnight moves today, so it is in here.
+	function drawKey(mode, p) {
+		return [mode, view, p ? [iso(p.start), iso(p.focus), p.focusIsToday, iso(p.today)].join() : "empty"].join("|");
+	}
+
 	function render(opening) {
+		clearTimeout(typingTimer);
+		typingTimer = null;
 		var mode = setting.get();
 		syncControls(mode);
 		root.setAttribute("data-wk-mode", mode);
@@ -363,12 +375,20 @@
 			root.setAttribute("data-wk-state", "off");
 			root.removeAttribute("data-wk-week");
 			bounds = null;
+			drawn = null;
+			return;
+		}
+		var p = W.pregnancy(values);
+		// Most events (the tab coming back, a click on the selector, leaving a
+		// field) change nothing here. Rebuilding anyway costs time on slow
+		// phones and throws away keyboard focus inside the months.
+		if (drawKey(mode, p) === drawn) {
 			return;
 		}
 		var wasHidden = root.hidden;
 		root.hidden = false;
+		var refocus = focusedMonth();
 
-		var p = W.pregnancy(values);
 		if (p) {
 			focusMonth = monthNumber(p.focus);
 			root.setAttribute("data-wk-state", "ready");
@@ -390,8 +410,28 @@
 			back.hidden = true;
 			bounds = null;
 		}
+		// drawMonth can settle the view, so the key is taken after drawing.
+		drawn = drawKey(mode, p);
+		if (refocus) {
+			restoreFocus(refocus);
+		}
 		if (opening && wasHidden) {
 			play(root, "wk-opening");
+		}
+	}
+
+	// The month heading that has keyboard focus, if any, so a rebuild can put it back.
+	function focusedMonth() {
+		var active = document.activeElement;
+		var month = active && months.contains(active) ? active.closest(".wk-mon") : null;
+		return month ? month.getAttribute("data-wk-month") : null;
+	}
+
+	function restoreFocus(month) {
+		var heading = months.querySelector('[data-wk-month="' + month + '"] .wk-mon-title');
+		if (heading) {
+			heading.setAttribute("tabindex", "-1");
+			heading.focus({ preventScroll: true });
 		}
 	}
 
@@ -436,7 +476,7 @@
 		if (!bounds) {
 			return;
 		}
-		var shown = view === null ? focusMonth : view;
+		var shown = view === null ? homeMonth() : view;
 		var next = Math.min(Math.max(shown + delta, bounds.min), bounds.max);
 		if (next === shown) {
 			return;
@@ -467,8 +507,8 @@
 		var shown = view;
 		view = null;
 		render(false);
-		if (shown !== null && focusMonth !== null) {
-			play(months, focusMonth > shown ? "wk-from-next" : "wk-from-prev");
+		if (shown !== null && bounds) {
+			play(months, homeMonth() > shown ? "wk-from-next" : "wk-from-prev");
 		}
 		// The button hides itself, so keep the keyboard in the calendar.
 		monthTitle.focus();
@@ -494,7 +534,15 @@
 			focusKey = key;
 			view = null;
 		}
-		render(false);
+		// Leaving the field fires another event, which draws straight away.
+		if (fields.indexOf(document.activeElement) !== -1) {
+			clearTimeout(typingTimer);
+			typingTimer = setTimeout(function () {
+				render(false);
+			}, TYPING_PAUSE_MS);
+		} else {
+			render(false);
+		}
 	});
 
 	// ---- The setting and its dialog ----
@@ -524,11 +572,7 @@
 
 	function openDialog() {
 		syncControls(setting.get());
-		if (typeof dialog.showModal === "function") {
-			dialog.showModal();
-		} else {
-			dialog.setAttribute("open", "");
-		}
+		dialog.showModal();
 		var checked = dialog.querySelector('input[name="wkMode"]:checked');
 		if (checked) {
 			checked.focus();
@@ -536,24 +580,29 @@
 	}
 
 	function closeDialog() {
-		if (typeof dialog.close === "function") {
-			dialog.close();
-		} else {
-			dialog.removeAttribute("open");
-			onClosed();
-		}
+		dialog.close();
 	}
 
 	function onClosed() {
-		gear.focus();
 		if (scrollPending) {
 			scrollPending = false;
-			if (setting.get() === "pregnancy" && root.getAttribute("data-wk-state") === "ready") {
+			var heading = months.querySelector(".is-focus-month .wk-mon-title");
+			if (setting.get() === "pregnancy" && heading) {
 				scrollToFocus();
+				// Keyboard focus follows the page down, so the next Tab does not jump back up.
+				heading.setAttribute("tabindex", "-1");
+				heading.focus({ preventScroll: true });
+				return;
 			}
 		}
+		gear.focus();
 	}
 
+	// Every browser this page supports has <dialog>. Without it the setting
+	// cannot be offered properly, so the gear is not shown at all.
+	if (typeof dialog.showModal !== "function") {
+		gear.hidden = true;
+	}
 	gear.addEventListener("click", openDialog);
 	dialog.querySelector("[data-wk-close]").addEventListener("click", closeDialog);
 	dialog.addEventListener("close", onClosed);

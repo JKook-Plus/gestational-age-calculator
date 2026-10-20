@@ -18,6 +18,12 @@
 
 	// The calendars run to 42+6, the end of the last week a pregnancy is usually allowed.
 	var LAST_WEEK = 42;
+	var LAST_DAY = (LAST_WEEK + 1) * 7 - 1;
+
+	// The whole-pregnancy view also draws the focus month when it falls this
+	// many months or fewer outside 0+0 to 42+6 (a date past 42 weeks, say).
+	// A focus further away, such as an old due date, is not drawn.
+	var REACH_MONTHS = 6;
 
 	// Trimesters as ACOG defines them: the second starts at 14+0, the third at 28+0.
 	var TRIMESTERS = [
@@ -56,7 +62,6 @@
 			start: start,
 			edd: edd,
 			today: today,
-			todayDays: today.diff(start, "days"),
 			focus: focus,
 			focusDays: focus.diff(start, "days"),
 			// True when there is no calculation date and the focus is today.
@@ -94,14 +99,33 @@
 		return null;
 	}
 
-	// The milestone that falls inside week `week`, if any.
-	function milestoneInWeek(week) {
+	// The milestone that falls on day `days`, if any.
+	function milestoneOn(days) {
 		for (var i = 0; i < MILESTONES.length; i++) {
-			if (weekOf(MILESTONES[i].days) === week) {
+			if (MILESTONES[i].days === days) {
 				return MILESTONES[i];
 			}
 		}
 		return null;
+	}
+
+	// A month as year * 12 + month, so months can be counted and compared.
+	function monthNumber(date) {
+		return date.year() * 12 + date.month();
+	}
+
+	// The months the whole-pregnancy view draws, as month numbers: 0+0 to
+	// 42+6, stretched to take in a focus up to REACH_MONTHS outside them.
+	function monthRange(p) {
+		var first = monthNumber(p.start);
+		var last = monthNumber(dateOf(p, LAST_DAY));
+		var focus = monthNumber(p.focus);
+		if (focus < first && first - focus <= REACH_MONTHS) {
+			first = focus;
+		} else if (focus > last && focus - last <= REACH_MONTHS) {
+			last = focus;
+		}
+		return { first: first, last: last };
 	}
 
 	function sameDay(a, b) {
@@ -119,14 +143,10 @@
 		return shortDate(from, withYear && split) + " to " + shortDate(to, withYear);
 	}
 
-	// "Thursday", the weekday every pregnancy week starts on.
-	function weekdayName(p) {
-		return p.start.format("dddd");
-	}
-
 	return {
 		TERM_DAYS: TERM_DAYS,
 		LAST_WEEK: LAST_WEEK,
+		LAST_DAY: LAST_DAY,
 		TRIMESTERS: TRIMESTERS,
 		MILESTONES: MILESTONES,
 		pregnancy: pregnancy,
@@ -135,10 +155,11 @@
 		weekOf: weekOf,
 		label: label,
 		trimester: trimester,
-		milestoneInWeek: milestoneInWeek,
+		milestoneOn: milestoneOn,
+		monthNumber: monthNumber,
+		monthRange: monthRange,
 		sameDay: sameDay,
 		shortDate: shortDate,
 		range: range,
-		weekdayName: weekdayName,
 	};
 });
