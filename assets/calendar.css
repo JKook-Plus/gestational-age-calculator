@@ -48,11 +48,6 @@
 
 /* ---- The settings dialog ---- */
 
-.head-btn[aria-haspopup="dialog"]:focus-visible {
-    outline: 2px solid var(--bs-primary);
-    outline-offset: 2px;
-}
-
 .wk-dialog {
     width: min(27rem, calc(100vw - 24px));
     max-width: none;
@@ -66,6 +61,15 @@
 
 .wk-dialog::backdrop {
     background: rgba(10, 16, 24, 0.45);
+}
+
+[data-bs-theme="dark"] .wk-dialog::backdrop {
+    background: rgba(0, 0, 0, 0.6);
+}
+
+/* Browsers without <dialog> show it as an ordinary element; calendar.js hides the gear there */
+.wk-dialog:not([open]) {
+    display: none;
 }
 
 .wk-dialog-body {
@@ -217,8 +221,9 @@
     box-shadow: none;
 }
 
-.wk-month-title:focus,
-.wk-mon-title:focus {
+/* Headings take focus from a script; show it only when it came from the keyboard */
+.wk-month-title:focus:not(:focus-visible),
+.wk-mon-title:focus:not(:focus-visible) {
     outline: none;
 }
 
@@ -232,13 +237,15 @@
     border: 1px dashed var(--bs-border-color);
     border-radius: var(--bs-border-radius);
     background-color: var(--bs-tertiary-bg);
-    color: var(--bs-secondary-color);
+    /* Body text: the secondary grey falls just under 4.5:1 on this background in dark */
+    color: var(--bs-body-color);
 }
 
 .wk-empty svg {
     flex: none;
     width: 24px;
     height: 24px;
+    color: var(--bs-secondary-color);
     fill: currentColor;
 }
 
@@ -426,10 +433,6 @@
 }
 
 /* The due date: its tag reads "Due" and the day is underlined */
-.is-due .wk-tag {
-    text-transform: none;
-}
-
 .is-due .wk-cell {
     box-shadow: inset 0 -3px 0 var(--wk-mark);
 }
@@ -440,6 +443,10 @@
 
 .is-due.is-focus .wk-cell {
     box-shadow: inset 0 -3px 0 var(--bs-body-bg);
+}
+
+.is-due.is-focus.is-today .wk-cell {
+    box-shadow: inset 0 0 0 2px var(--wk-mark), inset 0 0 0 4px var(--bs-body-bg), inset 0 -6px 0 var(--bs-body-bg);
 }
 
 /* Key */
@@ -594,6 +601,50 @@
 
     .wk-legend {
         gap: 6px 14px;
+    }
+}
+
+/* Windows High Contrast and other forced colours drop fills and box shadows,
+   so the marks are drawn with outlines, borders and system colours */
+@media (forced-colors: active) {
+    .is-focus .wk-cell,
+    .wk-key-focus {
+        forced-color-adjust: none;
+        background-color: Highlight;
+        color: HighlightText;
+    }
+
+    .is-today .wk-cell,
+    .wk-key-today {
+        outline: 2px solid CanvasText;
+        outline-offset: -2px;
+    }
+
+    .is-due .wk-cell,
+    .wk-key-due {
+        border-bottom: 3px solid CanvasText;
+    }
+
+    .wk-key:not(.wk-key-text) {
+        border: 1px solid CanvasText;
+    }
+}
+
+/* On paper: keep the colours, drop the controls, keep each month on one page */
+@media print {
+    .wk-cell,
+    .wk-key {
+        print-color-adjust: exact;
+        -webkit-print-color-adjust: exact;
+    }
+
+    .wk-nav-btn,
+    .wk-back {
+        display: none !important;
+    }
+
+    .wk-mon {
+        break-inside: avoid;
     }
 }
 
