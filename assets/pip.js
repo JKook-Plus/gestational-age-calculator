@@ -25,8 +25,17 @@
 		return;
 	}
 
-	// The API is available, so reveal the button.
-	pipButton.style.display = "";
+	// The API is available, so reveal the button once the calculator has started:
+	// the window mirrors the fields through window.GAPage, which main.js sets up
+	// just before its first "ga:values" event.
+	function revealButton() {
+		pipButton.style.display = "";
+	}
+	if (window.GAPage) {
+		revealButton();
+	} else {
+		document.addEventListener("ga:values", revealButton, { once: true });
+	}
 
 	function setButtonActive(isActive) {
 		pipButton.classList.toggle("active", isActive);
