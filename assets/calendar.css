@@ -1,0 +1,660 @@
+/* The week calendar under the calculator, and its settings dialog */
+
+/*
+ * One soft colour per trimester: mint, lavender, peach. The hues come from
+ * Halfmoon's own ramps with the saturation turned well down, so the calendar
+ * sits with the page's slate greys. In the dark theme the first two shift
+ * cooler (teal, periwinkle) so they do not turn muddy on the dark card.
+ *
+ * Neighbouring trimesters (the only ones that touch) were checked with a
+ * colour-vision palette validator: light 7.2 apart under simulated colour
+ * blindness and 9.2 in normal vision, dark 8.2 and 10.9. The key
+ * and the 14+0 and 28+0 labels name the trimesters too.
+ *
+ * Marks: the calculation date is filled, today is outlined and the due date
+ * is underlined, all in the page's selected style (the slate of the checked
+ * EDD / Date / GA button; light grey with dark text in the dark theme). Text
+ * on every fill and mark is at least 4.5:1, and every mark is at least 3:1
+ * against the fill under it.
+ */
+:root {
+    --wk-t1: #d2f5e2;
+    --wk-t2: #dbdafe;
+    --wk-t3: #f4c5b6;
+    --wk-mark: #5c6e8a;
+    --wk-mark-text: #ffffff;
+}
+
+[data-bs-theme="dark"] {
+    --wk-t1: #004336;
+    --wk-t2: #353f68;
+    --wk-t3: #834e3d;
+    --wk-mark: #d1d7e0;
+    --wk-mark-text: #1f252e;
+}
+
+/* Text for screen readers only. The trimmed Halfmoon has no .visually-hidden. */
+.wk-sr {
+    position: absolute !important;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+/* ---- The settings dialog ---- */
+
+.head-btn[aria-haspopup="dialog"]:focus-visible {
+    outline: 2px solid var(--bs-primary);
+    outline-offset: 2px;
+}
+
+.wk-dialog {
+    width: min(27rem, calc(100vw - 24px));
+    max-width: none;
+    padding: 0;
+    border: 1px solid var(--bs-border-color);
+    border-radius: var(--bs-border-radius-lg);
+    background-color: var(--bs-body-bg);
+    color: var(--bs-body-color);
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+}
+
+.wk-dialog::backdrop {
+    background: rgba(10, 16, 24, 0.45);
+}
+
+.wk-dialog-body {
+    padding: 12px 16px 18px;
+}
+
+.wk-dialog-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 8px;
+}
+
+.wk-dialog-title {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.wk-close {
+    display: inline-grid;
+    flex: none;
+    place-items: center;
+    width: 36px;
+    height: 36px;
+    margin-right: -8px;
+    padding: 0;
+    border: 0;
+    border-radius: 4px;
+    background: none;
+    color: var(--bs-secondary-color);
+}
+
+.wk-close svg {
+    width: 18px;
+    height: 18px;
+    fill: currentColor;
+}
+
+.wk-close:hover {
+    background-color: var(--bs-tertiary-bg);
+    color: var(--bs-body-color);
+}
+
+.wk-close:focus-visible {
+    outline: 2px solid var(--bs-primary);
+    outline-offset: 2px;
+}
+
+.wk-field {
+    margin: 0;
+    padding: 0;
+    border: 0;
+    min-width: 0;
+}
+
+.wk-field-label {
+    float: none;
+    width: auto;
+    margin: 0 0 6px;
+    padding: 0;
+    font-size: 0.875rem;
+    font-weight: 600;
+}
+
+/* Three equal parts, styled like the selector at the top of the calculator */
+.wk-modes > .btn {
+    display: flex;
+    flex: 1 1 0;
+    align-items: center;
+    justify-content: center;
+    min-width: 0;
+    line-height: 1.25;
+}
+
+.wk-hint {
+    margin: 8px 0 0;
+    font-size: 0.8125rem;
+    color: var(--bs-secondary-color);
+}
+
+/* ---- The calendar ---- */
+
+.wk {
+    margin: 0.75rem 0 1.5rem;
+    padding: 1rem;
+    text-align: left;
+}
+
+.wk[hidden],
+.wk [hidden] {
+    display: none !important;
+}
+
+/* The Picture-in-Picture copy shows only the calculator */
+.pip .wk,
+.pip .wk-dialog,
+.pip [data-week-setting-open] {
+    display: none !important;
+}
+
+/* The title and the way back share one row of fixed height, so nothing below moves */
+.wk-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    min-height: 36px;
+}
+
+.wk-title {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 600;
+    line-height: 1.4;
+}
+
+.wk-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    flex: none;
+    white-space: nowrap;
+}
+
+.wk-back svg {
+    width: 16px;
+    height: 16px;
+    fill: currentColor;
+}
+
+/* "Back to" a month in This month, "Go to" the focus month in Whole pregnancy */
+.wk-icon-go,
+.wk[data-wk-mode="pregnancy"] .wk-icon-back {
+    display: none;
+}
+
+.wk[data-wk-mode="pregnancy"] .wk-icon-go {
+    display: block;
+}
+
+.wk-back:focus-visible,
+.wk-nav-btn:focus-visible,
+.wk-month-title:focus-visible,
+.wk-mon-title:focus-visible {
+    outline: 2px solid var(--bs-primary);
+    outline-offset: 2px;
+    box-shadow: none;
+}
+
+.wk-month-title:focus,
+.wk-mon-title:focus {
+    outline: none;
+}
+
+/* No values yet */
+.wk-empty {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 0.5rem;
+    padding: 14px 16px;
+    border: 1px dashed var(--bs-border-color);
+    border-radius: var(--bs-border-radius);
+    background-color: var(--bs-tertiary-bg);
+    color: var(--bs-secondary-color);
+}
+
+.wk-empty svg {
+    flex: none;
+    width: 24px;
+    height: 24px;
+    fill: currentColor;
+}
+
+.wk-empty p {
+    margin: 0;
+}
+
+.wk-ready {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 14px;
+    margin-top: 0.5rem;
+}
+
+/* Where the focus is */
+.wk-week {
+    margin: 0 0 2px;
+    font-size: 1.125rem;
+    font-weight: 600;
+    line-height: 1.3;
+}
+
+.wk-facts {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    line-height: 1.5;
+}
+
+/* Month and arrows */
+.wk-nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 4px;
+}
+
+.wk-month-title {
+    flex: 1 1 auto;
+    margin: 0;
+    font-size: 0.9375rem;
+    font-weight: 600;
+    text-align: center;
+}
+
+.wk-nav-btn {
+    display: inline-grid;
+    flex: none;
+    place-items: center;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    border: 1px solid var(--bs-border-color);
+    border-radius: var(--bs-border-radius);
+    background-color: var(--bs-body-bg);
+    color: var(--bs-body-color);
+}
+
+.wk-nav-btn svg {
+    width: 16px;
+    height: 16px;
+    fill: currentColor;
+}
+
+.wk-nav-btn:hover {
+    background-color: var(--bs-tertiary-bg);
+}
+
+.wk-nav-btn[aria-disabled="true"] {
+    opacity: 0.4;
+    cursor: default;
+    background-color: var(--bs-body-bg);
+}
+
+/* Whole pregnancy: as many months across as fit */
+.wk-months-list.is-all {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(13.5rem, 1fr));
+    gap: 1.25rem 1.5rem;
+    align-items: start;
+}
+
+.wk-mon-title {
+    margin: 0 0 2px;
+    padding-left: 2px;
+    font-size: 0.875rem;
+    font-weight: 600;
+}
+
+.is-focus-month .wk-mon-title {
+    text-decoration: underline 2px var(--wk-mark);
+    text-underline-offset: 4px;
+}
+
+/* A month grid, Monday first */
+.wk-grid {
+    width: 100%;
+    table-layout: fixed;
+    border-collapse: separate;
+    border-spacing: 2px;
+    font-variant-numeric: tabular-nums;
+}
+
+.wk-grid th,
+.wk-grid td {
+    padding: 0;
+}
+
+.wk-grid thead th {
+    padding: 2px 0 4px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-align: center;
+    color: var(--bs-secondary-color);
+}
+
+.wk-day {
+    position: relative;
+    height: 2.75rem;
+}
+
+.is-all .wk-day {
+    height: 2.375rem;
+}
+
+.wk-cell {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1px;
+    border-radius: 4px;
+    line-height: 1.1;
+}
+
+.wk-num {
+    font-size: 0.875rem;
+}
+
+/* The first day of each pregnancy week carries its age */
+.wk-tag {
+    font-size: 0.625rem;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+}
+
+.is-wstart .wk-num {
+    font-weight: 600;
+}
+
+.is-t1 .wk-cell {
+    background-color: var(--wk-t1);
+}
+
+.is-t2 .wk-cell {
+    background-color: var(--wk-t2);
+}
+
+.is-t3 .wk-cell {
+    background-color: var(--wk-t3);
+}
+
+/* Days outside the pregnancy have no fill and grey numbers, so the pale first
+   trimester never has to be told apart from them by colour alone */
+.is-out .wk-cell {
+    color: var(--bs-secondary-color);
+}
+
+/* Today: outlined */
+.is-today .wk-cell {
+    box-shadow: inset 0 0 0 2px var(--wk-mark);
+}
+
+/* The focus day: filled */
+.is-focus .wk-cell {
+    background-color: var(--wk-mark);
+    color: var(--wk-mark-text);
+}
+
+.is-focus.is-today .wk-cell {
+    box-shadow: inset 0 0 0 2px var(--wk-mark), inset 0 0 0 4px var(--bs-body-bg);
+}
+
+/* The due date: its tag reads "Due" and the day is underlined */
+.is-due .wk-tag {
+    text-transform: none;
+}
+
+.is-due .wk-cell {
+    box-shadow: inset 0 -3px 0 var(--wk-mark);
+}
+
+.is-due.is-today .wk-cell {
+    box-shadow: inset 0 0 0 2px var(--wk-mark), inset 0 -4px 0 var(--wk-mark);
+}
+
+.is-due.is-focus .wk-cell {
+    box-shadow: inset 0 -3px 0 var(--bs-body-bg);
+}
+
+/* Key */
+.wk-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 20px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    font-size: 0.8125rem;
+    color: var(--bs-secondary-color);
+}
+
+.wk-legend li {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+}
+
+.wk-key-box {
+    display: inline-grid;
+    flex: none;
+    place-items: center;
+    min-width: 18px;
+}
+
+.wk-key {
+    display: block;
+    width: 16px;
+    height: 16px;
+    border-radius: 3px;
+}
+
+/* An outline keeps the pale first trimester visible in the key on either background */
+.wk-key.is-t1,
+.wk-key.is-t2,
+.wk-key.is-t3 {
+    box-shadow: inset 0 0 0 1px var(--bs-border-color);
+}
+
+.wk-key.is-t1 {
+    background-color: var(--wk-t1);
+}
+
+.wk-key.is-t2 {
+    background-color: var(--wk-t2);
+}
+
+.wk-key.is-t3 {
+    background-color: var(--wk-t3);
+}
+
+.wk-key-focus {
+    background-color: var(--wk-mark);
+}
+
+.wk-key-today {
+    box-shadow: inset 0 0 0 2px var(--wk-mark);
+}
+
+.wk-key-focus.wk-key-today {
+    box-shadow: inset 0 0 0 2px var(--wk-mark), inset 0 0 0 4px var(--bs-body-bg);
+}
+
+.wk-key-due {
+    box-shadow: inset 0 0 0 1px var(--bs-border-color), inset 0 -3px 0 var(--wk-mark);
+}
+
+.wk-key-text {
+    width: auto;
+    height: auto;
+    font-size: 0.625rem;
+    font-weight: 600;
+    color: var(--bs-body-color);
+}
+
+/* This month, on a wide screen: the month on the left, the facts and the key beside it */
+@media (min-width: 768px) {
+    .wk-ready.is-month {
+        grid-template-columns: minmax(0, 25rem) minmax(0, 1fr);
+        grid-template-rows: auto 1fr;
+        grid-template-areas:
+            "cal info"
+            "cal legend";
+        gap: 10px 2.5rem;
+    }
+
+    .is-month .wk-cal {
+        grid-area: cal;
+    }
+
+    .is-month .wk-info {
+        grid-area: info;
+        padding-top: 6px;
+    }
+
+    .is-month .wk-legend {
+        grid-area: legend;
+        flex-direction: column;
+        align-content: flex-start;
+    }
+}
+
+/* Phones and the narrow layout of the page: 44 px tap targets */
+@media (max-width: 767.98px) {
+    /* One month on a phone: the key after the month, not between the facts and the month */
+    .is-month .wk-legend {
+        order: 3;
+    }
+
+    .wk-nav-btn,
+    .wk-close {
+        width: 44px;
+        height: 44px;
+    }
+
+    .wk-head {
+        min-height: 44px;
+    }
+
+    .wk-back {
+        min-height: 44px;
+    }
+
+    .wk-modes > .btn {
+        min-height: 44px;
+    }
+
+    /* The dialog opens as a sheet at the bottom, like the date picker */
+    .wk-dialog {
+        width: min(100%, 400px);
+        margin: auto auto 0;
+        border-width: 1px 0 0;
+        border-radius: 14px 14px 0 0;
+        box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.3);
+    }
+
+    .wk-dialog-body {
+        padding-bottom: 22px;
+    }
+}
+
+@media (max-width: 575.98px) {
+    .wk {
+        padding: 12px;
+    }
+
+    .wk-week {
+        font-size: 1rem;
+    }
+
+    .wk-legend {
+        gap: 6px 14px;
+    }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+    .wk.wk-opening {
+        animation: wk-open 0.18s ease-out;
+    }
+
+    .wk-months-list.wk-from-next {
+        animation: wk-from-next 0.16s ease-out;
+    }
+
+    .wk-months-list.wk-from-prev {
+        animation: wk-from-prev 0.16s ease-out;
+    }
+
+    .wk-months-list.wk-fade {
+        animation: wk-fade 0.18s ease-out;
+    }
+
+    .wk-dialog[open] {
+        animation: wk-open 0.16s ease-out;
+    }
+
+    @keyframes wk-open {
+        from {
+            opacity: 0;
+            transform: translateY(-4px);
+        }
+    }
+
+    @keyframes wk-from-next {
+        from {
+            opacity: 0.35;
+            transform: translateX(14px);
+        }
+    }
+
+    @keyframes wk-from-prev {
+        from {
+            opacity: 0.35;
+            transform: translateX(-14px);
+        }
+    }
+
+    @keyframes wk-fade {
+        from {
+            opacity: 0;
+        }
+    }
+}
+
+@media (max-width: 767.98px) and (prefers-reduced-motion: no-preference) {
+    .wk-dialog[open] {
+        animation: wk-sheet 0.16s ease-out;
+    }
+
+    @keyframes wk-sheet {
+        from {
+            opacity: 0;
+            transform: translateY(24px);
+        }
+    }
+}

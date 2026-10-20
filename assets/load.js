@@ -26,10 +26,10 @@
 	// Added to the calculator's own file names so that a new release is never
 	// mixed with cached copies of the old one. Change it, and the ?v= tags in
 	// index.html, whenever these files change.
-	var VERSION = "2026-10-10";
+	var VERSION = "2026-10-20";
 
 	// The calculator's own files, in dependency order.
-	var APP = ["assets/calc.js", "assets/main.js", "assets/pip.js"].map(function (file) {
+	var APP = ["assets/calc.js", "assets/main.js", "assets/pip.js", "assets/weeks.js", "assets/calendar.js"].map(function (file) {
 		return file + "?v=" + VERSION;
 	});
 
