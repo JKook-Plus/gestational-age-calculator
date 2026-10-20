@@ -39,6 +39,7 @@
 		<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.10.0/css/bootstrap-datepicker.min.css" integrity="sha384-CC71RiODk4ecgf4v08/NxxkopdDktMR6TlgvcoNjnFGxJ3v7u2oKt/FAbUl2SzEs" crossorigin="anonymous" data-fallback="assets/vendor/bootstrap-datepicker-1.10.0.min.css" onerror="cssFallback(this)" />
 		<!-- Site overrides must come after the framework sheets they override -->
 		<link rel="stylesheet" href="assets/style.css?v=2026-10-11" />
+		<link rel="stylesheet" href="assets/calendar.css?v=2026-10-20" />
 	</head>
 
 	<body>
@@ -51,6 +52,15 @@
 				</div>
 
 				<div class="tools">
+					<!-- Settings: the week calendar under the calculator -->
+					<button id="wkSettingsBtn" type="button" class="head-btn" data-week-setting-open aria-haspopup="dialog" aria-controls="wkDialog" title="Settings" aria-label="Settings">
+						<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" aria-hidden="true">
+							<path
+								d="M128,80a48,48,0,1,0,48,48A48.05,48.05,0,0,0,128,80Zm0,80a32,32,0,1,1,32-32A32,32,0,0,1,128,160Zm109.94-52.79a8,8,0,0,0-3.89-5.4l-29.83-17-.12-33.62a8,8,0,0,0-2.83-6.08,111.91,111.91,0,0,0-36.72-20.67,8,8,0,0,0-6.46.59L128,41.85,97.88,25a8,8,0,0,0-6.47-.6A112.1,112.1,0,0,0,54.73,45.15a8,8,0,0,0-2.83,6.07l-.15,33.65-29.83,17a8,8,0,0,0-3.89,5.4,106.47,106.47,0,0,0,0,41.56,8,8,0,0,0,3.89,5.4l29.83,17,.12,33.62a8,8,0,0,0,2.83,6.08,111.91,111.91,0,0,0,36.72,20.67,8,8,0,0,0,6.46-.59L128,214.15,158.12,231a7.91,7.91,0,0,0,3.9,1,8.09,8.09,0,0,0,2.57-.42,112.1,112.1,0,0,0,36.68-20.73,8,8,0,0,0,2.83-6.07l.15-33.65,29.83-17a8,8,0,0,0,3.89-5.4A106.47,106.47,0,0,0,237.94,107.21Zm-15,34.91-28.57,16.25a8,8,0,0,0-3,3c-.58,1-1.19,2.06-1.81,3.06a7.94,7.94,0,0,0-1.22,4.21l-.15,32.25a95.89,95.89,0,0,1-25.37,14.3L134,199.13a8,8,0,0,0-3.91-1h-.19c-1.21,0-2.43,0-3.64,0a8.08,8.08,0,0,0-4.1,1l-28.84,16.1A96,96,0,0,1,67.88,201l-.11-32.2a8,8,0,0,0-1.22-4.22c-.62-1-1.23-2-1.8-3.06a8.09,8.09,0,0,0-3-3.06l-28.6-16.29a90.49,90.49,0,0,1,0-28.26L61.67,97.63a8,8,0,0,0,3-3c.58-1,1.19-2.06,1.81-3.06a7.94,7.94,0,0,0,1.22-4.21l.15-32.25a95.89,95.89,0,0,1,25.37-14.3L122,56.87a8,8,0,0,0,4.1,1c1.21,0,2.43,0,3.64,0a8.08,8.08,0,0,0,4.1-1l28.84-16.1A96,96,0,0,1,188.12,55l.11,32.2a8,8,0,0,0,1.22,4.22c.62,1,1.23,2,1.8,3.06a8.09,8.09,0,0,0,3,3.06l28.6,16.29A90.49,90.49,0,0,1,222.9,142.12Z"
+							/>
+						</svg>
+					</button>
+
 					<button id="colorToggle" type="button" class="head-btn" onclick="toggleDarkMode()" title="Switch between light and dark mode" aria-label="Switch between light and dark mode">
 						<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" class="icon-moon" aria-hidden="true">
 							<path
@@ -146,8 +156,84 @@
 					</div>
 				</div>
 			</div>
+
+			<!-- The week calendar. Turned on from the settings dialog; calendar.js fills it in. -->
+			<section id="weekCalendar" class="wk wk-months shadow rounded mx-auto" aria-labelledby="wkTitle" data-wk-state="off" hidden>
+				<div class="wk-head">
+					<h2 id="wkTitle" class="wk-title">Week calendar</h2>
+					<button type="button" id="wkBack" class="btn btn-secondary wk-back" hidden>
+						<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" aria-hidden="true" class="wk-icon-go">
+							<path d="M208,32H184V24a8,8,0,0,0-16,0v8H88V24a8,8,0,0,0-16,0v8H48A16,16,0,0,0,32,48V208a16,16,0,0,0,16,16H208a16,16,0,0,0,16-16V48A16,16,0,0,0,208,32ZM72,48v8a8,8,0,0,0,16,0V48h80v8a8,8,0,0,0,16,0V48h24V80H48V48ZM208,208H48V96H208V208Zm-38.34-85.66a8,8,0,0,1,0,11.32l-48,48a8,8,0,0,1-11.32,0l-24-24a8,8,0,0,1,11.32-11.32L116,164.69l42.34-42.35A8,8,0,0,1,169.66,122.34Z" />
+						</svg>
+						<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" aria-hidden="true" class="wk-icon-back">
+							<path d="M224,128a96,96,0,0,1-94.71,96H128A95.38,95.38,0,0,1,62.1,197.8a8,8,0,0,1,11-11.63A80,80,0,1,0,71.43,71.39a3.07,3.07,0,0,1-.26.25L44.59,96H72a8,8,0,0,1,0,16H24a8,8,0,0,1-8-8V56a8,8,0,0,1,16,0V85.8L60.25,60A96,96,0,0,1,224,128Z" />
+						</svg>
+						<span id="wkBackText">Back</span>
+					</button>
+				</div>
+
+				<div id="wkEmpty" class="wk-empty" hidden>
+					<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" aria-hidden="true">
+						<path d="M208,32H184V24a8,8,0,0,0-16,0v8H88V24a8,8,0,0,0-16,0v8H48A16,16,0,0,0,32,48V208a16,16,0,0,0,16,16H208a16,16,0,0,0,16-16V48A16,16,0,0,0,208,32ZM72,48v8a8,8,0,0,0,16,0V48h80v8a8,8,0,0,0,16,0V48h24V80H48V48ZM208,208H48V96H208V208Z" />
+					</svg>
+					<p>Enter a due date, or a date and a gestational age, to see the weeks.</p>
+				</div>
+
+				<div id="wkReady" class="wk-ready" hidden>
+					<div class="wk-info">
+						<p id="wkWeek" class="wk-week"></p>
+						<ul id="wkFacts" class="wk-facts"></ul>
+					</div>
+					<ul id="wkLegend" class="wk-legend"></ul>
+					<div id="wkCal" class="wk-cal">
+						<div id="wkNav" class="wk-nav">
+							<button type="button" class="wk-nav-btn" data-wk-prev aria-label="Previous month" title="Previous month" aria-keyshortcuts="PageUp">
+								<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" aria-hidden="true">
+									<path d="M165.66,202.34a8,8,0,0,1-11.32,11.32l-80-80a8,8,0,0,1,0-11.32l80-80a8,8,0,0,1,11.32,11.32L91.31,128Z" />
+								</svg>
+							</button>
+							<h3 id="wkMonth" class="wk-month-title" tabindex="-1"></h3>
+							<button type="button" class="wk-nav-btn" data-wk-next aria-label="Next month" title="Next month" aria-keyshortcuts="PageDown">
+								<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" aria-hidden="true">
+									<path d="M181.66,133.66l-80,80a8,8,0,0,1-11.32-11.32L164.69,128,90.34,53.66a8,8,0,0,1,11.32-11.32l80,80A8,8,0,0,1,181.66,133.66Z" />
+								</svg>
+							</button>
+						</div>
+						<div id="wkMonths" class="wk-months-list"></div>
+					</div>
+				</div>
+
+				<p id="wkStatus" class="wk-sr" aria-live="polite"></p>
+			</section>
+
+			<dialog id="wkDialog" class="wk-dialog" aria-labelledby="wkDialogTitle">
+				<div class="wk-dialog-body">
+					<div class="wk-dialog-head">
+						<h2 id="wkDialogTitle" class="wk-dialog-title">Settings</h2>
+						<button type="button" class="wk-close" data-wk-close title="Close" aria-label="Close">
+							<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" aria-hidden="true">
+								<path d="M205.66,194.34a8,8,0,0,1-11.32,11.32L128,139.31,61.66,205.66a8,8,0,0,1-11.32-11.32L116.69,128,50.34,61.66A8,8,0,0,1,61.66,50.34L128,116.69l66.34-66.35a8,8,0,0,1,11.32,11.32L139.31,128Z" />
+							</svg>
+						</button>
+					</div>
+					<fieldset class="wk-field" aria-describedby="wkModeHint">
+						<legend class="wk-field-label">Week calendar</legend>
+						<div class="btn-group w-100 wk-modes" data-week-setting>
+							<input type="radio" class="btn-check" name="wkMode" id="wkModeOff" value="off" autocomplete="off" />
+							<label class="btn btn-outline-secondary" for="wkModeOff" data-wk-mode="off">Off</label>
+
+							<input type="radio" class="btn-check" name="wkMode" id="wkModeMonth" value="month" autocomplete="off" />
+							<label class="btn btn-outline-secondary" for="wkModeMonth" data-wk-mode="month">This month</label>
+
+							<input type="radio" class="btn-check" name="wkMode" id="wkModePregnancy" value="pregnancy" autocomplete="off" />
+							<label class="btn btn-outline-secondary" for="wkModePregnancy" data-wk-mode="pregnancy">Whole pregnancy</label>
+						</div>
+						<p id="wkModeHint" class="wk-hint"></p>
+					</fieldset>
+				</div>
+			</dialog>
 		</div>
 
-		<script src="assets/load.js?v=2026-10-10"></script>
+		<script src="assets/load.js?v=2026-10-20"></script>
 	</body>
 </html>

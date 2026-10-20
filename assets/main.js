@@ -188,7 +188,14 @@
 			renderCopies("edd", values.edd ? [GACalc.formatDate(values.edd), GACalc.formatDateLong(values.edd)] : []);
 			renderCopies("date", values.date ? [GACalc.formatDate(values.date)] : []);
 			renderCopies("ga", values.ga !== null ? [GACalc.formatGAShort(values.ga)] : []);
+
+			// The week calendar under the card draws from these. A value is null
+			// when its field is empty, not understood, or not worked out yet.
+			lastValues = { edd: values.edd, date: values.date, gaDays: values.ga, output: output };
+			document.dispatchEvent(new CustomEvent("ga:values", { detail: lastValues }));
 		}
+
+		var lastValues = null;
 
 		// One copy button per value. Each shows exactly the text it copies.
 		function renderCopies(key, texts) {
@@ -406,7 +413,14 @@
 			};
 		}
 
-		window.GAPage = { connect: connect, disconnect: disconnect };
+		window.GAPage = {
+			connect: connect,
+			disconnect: disconnect,
+			// The values from the last render, for a calendar that starts after it.
+			values: function () {
+				return lastValues;
+			},
+		};
 
 		var pipId = (/[?&]pip=([\w-]+)/.exec(window.location.search) || [])[1];
 		if (pipId) {
