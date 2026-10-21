@@ -7,18 +7,19 @@
  * Off, This month (one month with arrows) or Whole pregnancy (every month
  * from 0+0 to 42+6).
  *
- * Whole pregnancy is sized to the window: the months are laid out in as few
- * rows as the space allows and the day cells take the height left below the
- * calculator, measured live. Nothing inside scrolls. Where even that cannot
- * fit (a short window), the calendar section is sized to the window instead.
+ * On a computer Whole pregnancy is sized to the window: the months are laid
+ * out in as few rows as the space allows and the day cells take the height
+ * left below the calculator, measured live. Nothing inside scrolls. Where
+ * even that cannot fit (a short window), the calendar section is sized to the
+ * window instead, or failing that the page scrolls and "Go to" comes back.
  * On a phone it is laid out like the live page, two months across, and the
  * page scrolls: fitting it all into one screen there made the days too small.
  *
  * Browsing to another month is local view state. A change to the focus date
  * or the due date snaps the view back to the focus; a redraw that only moves
  * today (midnight, or the tab coming back) keeps the month being looked at.
- * The page is only ever scrolled when the user turns on Whole pregnancy,
- * never while they type.
+ * The page is only ever scrolled when the user turns on Whole pregnancy or
+ * presses "Go to", never while they type.
  */
 (function () {
 	"use strict";
@@ -216,11 +217,12 @@
 		}
 
 		var html = '<td class="' + classes + '" data-wk-day="' + iso(date) + '"' + (inside ? ' data-wk-ga="' + W.label(days) + '"' : "") + ">";
-		// The title shows the age on hover when the cell is too small to carry it.
-		html += '<div class="wk-cell"' + (inside ? ' title="' + W.label(days) + ", " + date.format("ddd D MMM YYYY") + (isDue ? ", due date" : "") + '"' : "") + '><span class="wk-num" aria-hidden="true">' + date.date() + "</span>";
+		// In the fitted months the title shows the age on hover, since the cells are too small to carry it.
+		var tip = inside && root.classList.contains("is-fit");
+		html += '<div class="wk-cell"' + (tip ? ' title="' + W.label(days) + ", " + mediumDate(date) + (isDue ? ", due date" : "") + '"' : "") + '><span class="wk-num" aria-hidden="true">' + date.date() + "</span>";
 		if (weekStart) {
-			// "22+0", or just the week ("22") when the fitted cells are small.
-			html += '<span class="wk-tag" aria-hidden="true"><span class="wk-l">' + (isDue ? "Due" : W.label(days)) + '</span><span class="wk-s">' + W.weekOf(days) + "</span></span>";
+			// "22+0", or just the week ("22") when the cells are small. The due date reads "Due" in both.
+			html += '<span class="wk-tag" aria-hidden="true"><span class="wk-l">' + (isDue ? "Due" : W.label(days)) + '</span><span class="wk-s">' + (isDue ? "Due" : W.weekOf(days)) + "</span></span>";
 		}
 		html += '<span class="wk-sr">' + name.join(", ") + "</span></div></td>";
 		return html;
@@ -264,7 +266,7 @@
 
 	// The facts as list items. In Whole pregnancy they sit on one line after
 	// the week; the week's dates are optional there and drop out when keeping
-	// them would wrap the line (see fitInfo).
+	// them would wrap the line (see fit).
 	function drawInfo(p, mode) {
 		var all = mode === "pregnancy";
 		var dateText = all ? mediumDate : longDate;
@@ -370,19 +372,19 @@
 		}
 		months.className = "wk-months-list is-all";
 		months.innerHTML = html;
+		// Where the page scrolls, "Go to" brings the focus month into view.
+		backText.textContent = p.focusIsToday ? "Go to today" : "Go to " + W.shortDate(p.focus);
+		back.title = p.focusIsToday ? "Scroll to this month" : "Scroll to the month of the calculation date";
 		if (phone.matches) {
-			// A phone scrolls, as on the live page: the key goes above the months
-			// and "Go to" brings the focus month into view.
+			// A phone scrolls, as on the live page, with the key above the months.
 			if (legend.parentNode !== ready) {
 				ready.insertBefore(legend, cal);
 			}
-			backText.textContent = p.focusIsToday ? "Go to today" : "Go to " + W.shortDate(p.focus);
-			back.title = p.focusIsToday ? "Scroll to this month" : "Scroll to the month of the calculation date";
 			back.hidden = !months.querySelector(".is-focus-month");
 		} else {
 			// The key takes the slot after the last month, which a row of months usually leaves empty.
 			months.appendChild(legend);
-			// Everything is on screen at once, so there is nothing to go to.
+			// fit() shows "Go to" only if the months end up taller than the window.
 			back.hidden = true;
 		}
 		// A focus or today far from the pregnancy is not drawn, so its key goes too.
@@ -627,11 +629,11 @@
 		var last = weeks[weeks.length - 1];
 		// The key sits under a gap the height of a month heading, so it lines up with the weekdays.
 		var keyRowH = size.title + beside;
-		if (beside && size.title + size.head + space * (last + 2) + last * (cellH + space) < keyRowH) {
+		if (beside && size.title + size.head + space * (last + 2) + last * cellH < keyRowH) {
 			// The key is taller than the months beside it, so it sets that row's height.
 			fixed += keyRowH - (size.title + size.head + space * (last + 2));
 			count -= last;
-			cellH = count ? (height - fixed - last * space) / count : height >= fixed ? MAX_CELL : 0;
+			cellH = count ? (height - fixed) / count : height >= fixed ? MAX_CELL : 0;
 		}
 		return cellH;
 	}
@@ -652,6 +654,7 @@
 		// Two lines in a short cell: the date drops to 11 px.
 		root.classList.toggle("is-short-day", layout.cellH < 22);
 		legend.classList.toggle("is-row", layout.keyRow);
+		legend.classList.toggle("is-below", !layout.keySpan);
 		legend.style.gridColumn = layout.keySpan ? "span " + layout.keySpan : "1 / -1";
 	}
 
@@ -660,21 +663,29 @@
 	function unfit() {
 		root.classList.remove("is-fit", "is-narrow-month", "is-narrow-day", "is-short-day");
 		root.removeAttribute("data-wk-fit");
-		legend.classList.remove("is-row");
+		legend.classList.remove("is-row", "is-below");
 		legend.style.gridColumn = "";
 		FIT_PROPS.forEach(function (name) {
 			root.style.removeProperty(name);
 		});
 	}
 
-	// Sizes the months to the room left in the window. On a desktop that is
-	// the space below the calculator, so the whole page fits. Where even the
-	// smallest cells would not fit there (a phone, where the calculator alone
-	// is most of the screen), the calendar section is sized to the window.
+	// Sizes the months to the room left in the window: the space below the
+	// calculator, so the whole page fits. Where even the smallest cells would
+	// not fit there (a short window), the calendar section is sized to the
+	// window instead, and failing that the page scrolls. "Go to" shows only
+	// when the page scrolls.
 	function fit() {
 		if (root.hidden || !root.classList.contains("is-fit")) {
 			return;
 		}
+		back.hidden = true;
+		var whole = place();
+		back.hidden = whole || !months.querySelector(".is-focus-month");
+	}
+
+	// Lays the months out; true when the whole page fits in the window.
+	function place() {
 		var rows = Array.prototype.map.call(months.querySelectorAll(".wk-mon"), function (month) {
 			return Number(month.getAttribute("data-wk-rows"));
 		});
@@ -708,35 +719,40 @@
 			layout = plan(rows, width, room, keyAt);
 		}
 		if (!layout) {
-			smallest(rows, width);
-			return;
+			smallest(rows, width, keyAt);
+			return false;
 		}
 		apply(layout);
 		// Put right anything the plan did not foresee, such as a key taller than its row.
-		for (var tries = 0; tries < 2; tries++) {
+		for (var tries = 0; tries < 3; tries++) {
 			var limit = whole ? window.innerHeight - margin : docTop(root) + window.innerHeight;
 			var over = docTop(root) + root.offsetHeight - limit;
 			if (over <= 0) {
-				return;
+				return whole;
+			}
+			if (tries === 2) {
+				return false;
 			}
 			room -= over;
 			layout = plan(rows, width, room, keyAt);
 			if (!layout) {
-				smallest(rows, width);
-				return;
+				smallest(rows, width, keyAt);
+				return false;
 			}
 			apply(layout);
 		}
 	}
 
-	// A window too small for even the smallest cells: keep them readable and let the page scroll.
-	function smallest(rows, width) {
-		var layout = plan(rows, width, 1e6, function (keyW, size, row) {
-			return keyHeight(Math.floor(keyW), size, row);
-		});
-		layout.cellH = FITS[FITS.length - 1].minH;
-		layout.size = FITS[FITS.length - 1];
-		apply(layout);
+	// A window too small for even the smallest cells: the shortest layout
+	// that still fits them, and the page scrolls.
+	function smallest(rows, width, keyAt) {
+		for (var room = Math.max(window.innerHeight, 100); room < 50000; room *= 1.2) {
+			var layout = plan(rows, width, room, keyAt);
+			if (layout) {
+				apply(layout);
+				return;
+			}
+		}
 	}
 
 	// On a phone the months are two across at their natural height, and days
@@ -773,7 +789,18 @@
 	phone.addEventListener("change", function () {
 		render(false);
 	});
-	window.addEventListener("resize", refit);
+	// A mobile browser's toolbar coming and going while the page scrolls
+	// changes only the height. Phone tags depend only on the width, and a
+	// page already scrolled is taller than the window anyway, so neither
+	// follows it: the calendar stays still under the finger.
+	var lastWidth = window.innerWidth;
+	window.addEventListener("resize", function () {
+		if (window.innerWidth === lastWidth && (phone.matches || window.scrollY > 0)) {
+			return;
+		}
+		lastWidth = window.innerWidth;
+		refit();
+	});
 	if (window.ResizeObserver && card) {
 		new ResizeObserver(refit).observe(card);
 	}
