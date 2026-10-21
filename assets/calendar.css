@@ -525,10 +525,10 @@
 }
 
 /* ---- Whole pregnancy, fitted to the window ----
-   calendar.js measures the room left (below the calculator on a desktop, the
-   whole window on a phone), picks how many months go across and sets the
-   variables below. data-wk-fit names the cell size it chose: "lg" and "md"
-   label week starts "22+0", "sm" just "22", "xs" only makes the date bold. */
+   On a computer calendar.js measures the room left below the calculator,
+   picks how many months go across and sets the variables below. data-wk-fit names the cell size it chose: "lg" and "md"
+   label week starts "22+0", "sm" just "22", "xs" only makes the date bold.
+   Phones are not fitted, but use "sm" when "22+0" does not fit a day. */
 
 /* Label variants: long by default; the fitted sizes switch them */
 .wk-s,
@@ -548,6 +548,12 @@
 .wk[data-wk-fit="sm"] .wk-s,
 .wk[data-wk-fit="xs"] .wk-x {
     display: inline;
+}
+
+/* "Due" is a letter wider than "22", so it is set smaller to stay inside the day */
+.wk[data-wk-fit="sm"] .is-due .wk-s {
+    font-size: 0.5625rem;
+    letter-spacing: -0.03em;
 }
 
 /* The title and the summary share one line when there is room */
@@ -740,7 +746,8 @@
     gap: 3px 16px;
 }
 
-.is-fit .wk-legend.is-row:last-child {
+/* In a row of its own below the months, the key needs no gap for a heading */
+.is-fit .wk-legend.is-below {
     padding-top: 0;
 }
 
@@ -764,33 +771,10 @@
     text-align: center;
 }
 
-/* Wide windows: thin dividers between the facts (not before the week, which starts the line) */
-@media (min-width: 768px) {
-    .is-fit .wk-facts li {
-        padding-left: 20px;
-        border-left: 1px solid var(--bs-border-color);
-    }
-}
-
-/* Phones: every pixel of width goes to the days */
-@media (max-width: 575.98px) {
-    .wk.is-fit {
-        padding: 10px 8px;
-    }
-
-    .is-fit .wk-head,
-    .is-fit .wk-info {
-        padding: 0 4px;
-    }
-
-    .is-fit .wk-legend {
-        gap: 3px;
-        font-size: 0.6875rem;
-    }
-
-    .is-fit .wk-legend li {
-        gap: 5px;
-    }
+/* Thin dividers between the facts (not before the week, which starts the line) */
+.is-fit .wk-facts li {
+    padding-left: 20px;
+    border-left: 1px solid var(--bs-border-color);
 }
 
 /* This month, on a wide screen: the month on the left, the facts and the key beside it */
@@ -954,6 +938,43 @@
 
     .is-fit .is-all .wk-day {
         height: 1.9rem;
+    }
+
+    /* The key in a row of its own, and the labels at their full size */
+    .is-fit .wk-legend {
+        grid-column: 1 / -1 !important;
+        padding-top: 0;
+    }
+
+    .wk[data-wk-fit] .wk-tag,
+    .wk[data-wk-fit] .wk-l {
+        display: inline;
+    }
+
+    .wk[data-wk-fit] .wk-s,
+    .wk[data-wk-fit] .wk-x,
+    .is-narrow-month .wk-mon-s,
+    .is-narrow-day .wk-wd-s {
+        display: none;
+    }
+
+    .is-narrow-month .wk-mon-l {
+        position: static;
+        width: auto;
+        height: auto;
+        clip: auto;
+    }
+
+    .is-narrow-day .wk-wd-l {
+        display: inline;
+    }
+
+    .is-short-day .wk-cell {
+        line-height: 1.05;
+    }
+
+    .wk.is-short-day .wk-num {
+        font-size: 0.75rem;
     }
 }
 
