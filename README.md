@@ -13,7 +13,7 @@ A [website](https://ga.jkook.plus/) that works out a gestational age, a due date
 - Accepts many written date formats, plus shortcuts such as `t` for today and `t+3`
 - Copy buttons for each value
 - A floating Picture-in-Picture window in Chromium browsers
-- An optional week calendar under the calculator, turned on from the settings button: one month or the whole pregnancy, coloured by trimester, with each week's start labelled
+- An optional week calendar under the calculator, turned on from the settings button: one month or the whole pregnancy, coloured by trimester, with each week's start labelled. On a computer the whole pregnancy fits on one screen without scrolling
 
 ## Development
 

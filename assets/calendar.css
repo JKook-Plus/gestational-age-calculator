@@ -524,6 +524,275 @@
     color: var(--bs-body-color);
 }
 
+/* ---- Whole pregnancy, fitted to the window ----
+   calendar.js measures the room left (below the calculator on a desktop, the
+   whole window on a phone), picks how many months go across and sets the
+   variables below. data-wk-fit names the cell size it chose: "lg" and "md"
+   label week starts "22+0", "sm" just "22", "xs" only makes the date bold. */
+
+/* Label variants: long by default; the fitted sizes switch them */
+.wk-s,
+.wk-x,
+.wk-wd-s,
+.wk-mon-s {
+    display: none;
+}
+
+.wk[data-wk-fit="sm"] .wk-l,
+.wk[data-wk-fit="xs"] .wk-l,
+.wk[data-wk-fit="xs"] .wk-s,
+.wk[data-wk-fit="xs"] .wk-tag {
+    display: none;
+}
+
+.wk[data-wk-fit="sm"] .wk-s,
+.wk[data-wk-fit="xs"] .wk-x {
+    display: inline;
+}
+
+/* The title and the summary share one line when there is room */
+.wk.is-fit {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0 16px;
+    margin-bottom: 0.5rem;
+    padding: 10px 12px 12px;
+}
+
+.is-fit .wk-head {
+    flex: none;
+    min-height: 0;
+}
+
+.is-fit .wk-ready,
+.is-fit .wk-cal {
+    display: contents;
+}
+
+/* The summary has a line of its own under the title: the week first, then the
+   facts in the quieter grey, with room between them */
+.is-fit .wk-info {
+    display: flex;
+    flex: 1 1 100%;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0 20px;
+    min-width: 0;
+    margin-top: 2px;
+    font-size: 0.875rem;
+    line-height: 1.5;
+}
+
+.is-fit .wk-week {
+    margin: 0;
+    font-size: 0.9375rem;
+    line-height: 1.5;
+}
+
+.is-fit .wk-facts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0 20px;
+    line-height: 1.5;
+    color: var(--bs-secondary-color);
+}
+
+.is-fit .wk-facts li {
+    white-space: nowrap;
+}
+
+/* The months, and the key in the slot after the last one */
+.is-fit .wk-months-list.is-all {
+    flex: 1 1 100%;
+    grid-template-columns: repeat(var(--wk-cols, 6), minmax(0, 1fr));
+    gap: var(--wk-gap-y, 8px) var(--wk-gap-x, 16px);
+    margin-top: 12px;
+}
+
+.is-fit .wk-mon-title {
+    height: var(--wk-title-h, 19px);
+    margin: 0;
+    padding-left: var(--wk-space, 2px);
+    font-size: 0.8125rem;
+    line-height: var(--wk-title-h, 19px);
+    white-space: nowrap;
+}
+
+.is-fit .is-focus-month .wk-mon-title {
+    text-underline-offset: 3px;
+}
+
+.is-narrow-month .wk-mon-s {
+    display: inline;
+}
+
+.is-narrow-month .wk-mon-l {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+}
+
+.is-fit .wk-grid {
+    border-spacing: var(--wk-space, 2px);
+}
+
+.is-fit .wk-grid thead th {
+    height: var(--wk-head-h, 14px);
+    padding: 0;
+    font-size: 0.6875rem;
+    line-height: 1;
+}
+
+.is-narrow-day .wk-wd-l {
+    display: none;
+}
+
+.is-narrow-day .wk-wd-s {
+    display: inline;
+}
+
+.is-fit .is-all .wk-day {
+    height: var(--wk-cell-h, 2rem);
+}
+
+.is-fit .wk-cell {
+    gap: 0;
+    border-radius: 3px;
+    line-height: 1.05;
+}
+
+.is-fit .wk-num {
+    font-size: 0.75rem;
+}
+
+.is-fit .wk-tag {
+    font-size: 0.625rem;
+    letter-spacing: 0;
+}
+
+.wk[data-wk-fit="lg"] .wk-mon-title {
+    font-size: 0.875rem;
+}
+
+.wk[data-wk-fit="lg"] .wk-grid thead th {
+    font-size: 0.75rem;
+}
+
+.wk[data-wk-fit="lg"] .wk-num {
+    font-size: 0.875rem;
+}
+
+.wk[data-wk-fit="lg"] .wk-cell {
+    gap: 1px;
+}
+
+.wk[data-wk-fit="sm"] .wk-mon-title,
+.wk[data-wk-fit="xs"] .wk-mon-title,
+.wk[data-wk-fit="sm"] .wk-num,
+.wk[data-wk-fit="xs"] .wk-num {
+    font-size: 0.75rem;
+}
+
+.wk[data-wk-fit="sm"] .wk-cell {
+    gap: 1px;
+    line-height: 1;
+}
+
+/* Digits have no descenders, so a tight line height still keeps the date
+   and the week apart in a short cell */
+.is-short-day .wk-cell {
+    line-height: 0.85;
+}
+
+.wk.is-short-day .wk-num {
+    font-size: 0.6875rem;
+}
+
+.is-fit .wk-legend {
+    flex-direction: column;
+    flex-wrap: nowrap;
+    gap: 3px;
+    min-width: 0;
+    padding-top: var(--wk-title-h, 19px);
+    font-size: 0.75rem;
+    line-height: 1.3;
+}
+
+/* A range in the key wraps as a whole */
+.wk-nowrap {
+    white-space: nowrap;
+}
+
+/* On very narrow days the two rings of "calculation date, today" would leave
+   no room for the date, so both are thinner */
+.is-narrow-day .is-focus.is-today .wk-cell {
+    box-shadow: inset 0 0 0 1px var(--wk-mark), inset 0 0 0 2px var(--bs-body-bg);
+}
+
+/* With room to spare (a row of its own, or several slots) the key wraps in rows */
+.is-fit .wk-legend.is-row {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 3px 16px;
+}
+
+.is-fit .wk-legend.is-row:last-child {
+    padding-top: 0;
+}
+
+.is-fit .wk-legend li {
+    align-items: flex-start;
+}
+
+.is-fit .wk-key-box {
+    margin-top: 0;
+}
+
+.is-fit .wk-key {
+    width: 14px;
+    height: 14px;
+}
+
+.is-fit .wk-key-text {
+    width: auto;
+    height: auto;
+    min-width: 18px;
+    text-align: center;
+}
+
+/* Wide windows: thin dividers between the facts (not before the week, which starts the line) */
+@media (min-width: 768px) {
+    .is-fit .wk-facts li {
+        padding-left: 20px;
+        border-left: 1px solid var(--bs-border-color);
+    }
+}
+
+/* Phones: every pixel of width goes to the days */
+@media (max-width: 575.98px) {
+    .wk.is-fit {
+        padding: 10px 8px;
+    }
+
+    .is-fit .wk-head,
+    .is-fit .wk-info {
+        padding: 0 4px;
+    }
+
+    .is-fit .wk-legend {
+        gap: 3px;
+        font-size: 0.6875rem;
+    }
+
+    .is-fit .wk-legend li {
+        gap: 5px;
+    }
+}
+
 /* This month, on a wide screen: the month on the left, the facts and the key beside it */
 @media (min-width: 768px) {
     .wk-ready.is-month {
@@ -553,6 +822,31 @@
 
 /* Phones and the narrow layout of the page: 44 px tap targets */
 @media (max-width: 767.98px) {
+    /* Whole pregnancy on a phone: laid out like the live page, two months across,
+       and the page scrolls. Not fitted to the window (calendar.js leaves .is-fit off). */
+    .wk-months-list.is-all {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 1rem 10px;
+    }
+
+    .is-all .wk-day {
+        height: 2.25rem;
+    }
+
+    /* Days are about 20 px wide here, so the week-start tag drops its letter spacing */
+    .is-all .wk-tag {
+        letter-spacing: 0;
+    }
+
+    /* Narrow days label a week start "22"; the date keeps the live page's size */
+    .wk:not(.is-fit)[data-wk-fit="sm"] .wk-num {
+        font-size: 0.875rem;
+    }
+
+    .wk:not(.is-fit)[data-wk-fit="sm"] .wk-mon-title {
+        font-size: 0.875rem;
+    }
+
     /* One month on a phone: the key after the month, not between the facts and the month */
     .is-month .wk-legend {
         order: 3;
@@ -645,6 +939,21 @@
 
     .wk-mon {
         break-inside: avoid;
+    }
+
+    /* The fitted sizes suit the window, not the paper: three months across */
+    .wk.is-fit {
+        display: block;
+    }
+
+    .is-fit .wk-months-list.is-all {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 12px 20px;
+        margin-top: 10px;
+    }
+
+    .is-fit .is-all .wk-day {
+        height: 1.9rem;
     }
 }
 
