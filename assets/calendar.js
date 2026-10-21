@@ -7,11 +7,18 @@
  * Off, This month (one month with arrows) or Whole pregnancy (every month
  * from 0+0 to 42+6).
  *
+ * Whole pregnancy is sized to the window: the months are laid out in as few
+ * rows as the space allows and the day cells take the height left below the
+ * calculator, measured live. Nothing inside scrolls. Where even that cannot
+ * fit (a short window), the calendar section is sized to the window instead.
+ * On a phone it is laid out like the live page, two months across, and the
+ * page scrolls: fitting it all into one screen there made the days too small.
+ *
  * Browsing to another month is local view state. A change to the focus date
  * or the due date snaps the view back to the focus; a redraw that only moves
  * today (midnight, or the tab coming back) keeps the month being looked at.
- * The page is only ever scrolled when the user turns on Whole pregnancy or
- * asks to go to the focus, never while they type.
+ * The page is only ever scrolled when the user turns on Whole pregnancy,
+ * never while they type.
  */
 (function () {
 	"use strict";
@@ -87,9 +94,11 @@
 	var HINTS = {
 		off: "No calendar under the calculator.",
 		month: "One month, opening on the calculation date or today. Arrows move between months.",
-		pregnancy: "Every month from 0+0 to 42+6, one after another.",
+		pregnancy: "Every month from 0+0 to 42+6 at once, sized to fit the window.",
 	};
 	var reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+	// The page's narrow layout. Whole pregnancy is not fitted to the window there.
+	var phone = window.matchMedia("(max-width: 767.98px)");
 
 	function $(id) {
 		return document.getElementById(id);
@@ -109,6 +118,8 @@
 	var monthTitle = $("wkMonth");
 	var months = $("wkMonths");
 	var legend = $("wkLegend");
+	var cal = $("wkCal");
+	var card = document.querySelector(".calc-card");
 	var status = $("wkStatus");
 	var prevBtn = root.querySelector("[data-wk-prev]");
 	var nextBtn = root.querySelector("[data-wk-next]");
@@ -120,7 +131,7 @@
 	var view = null;
 	var bounds = null;
 	var focusMonth = null;
-	// Set when the user picks Whole pregnancy: the focus month is scrolled into view once the dialog closes.
+	// Set when the user picks Whole pregnancy: the calendar is scrolled into view once the dialog closes.
 	var scrollPending = false;
 	// What the calendar last drew. A redraw that would draw the same is skipped.
 	var drawn = null;
@@ -132,7 +143,8 @@
 	var WEEKDAYS = [1, 2, 3, 4, 5, 6, 0];
 	var WEEKDAY_HEAD = WEEKDAYS.map(function (day) {
 		var m = window.moment.utc().day(day);
-		return '<th scope="col"><span aria-hidden="true">' + m.format("dd") + '</span><span class="wk-sr">' + m.format("dddd") + "</span></th>";
+		// Two letters, or one when the fitted cells are very narrow.
+		return '<th scope="col"><span aria-hidden="true"><span class="wk-wd-l">' + m.format("dd") + '</span><span class="wk-wd-s">' + m.format("dd").charAt(0) + '</span></span><span class="wk-sr">' + m.format("dddd") + "</span></th>";
 	}).join("");
 
 	// ---- Dates ----
@@ -204,9 +216,11 @@
 		}
 
 		var html = '<td class="' + classes + '" data-wk-day="' + iso(date) + '"' + (inside ? ' data-wk-ga="' + W.label(days) + '"' : "") + ">";
-		html += '<div class="wk-cell"><span class="wk-num" aria-hidden="true">' + date.date() + "</span>";
+		// The title shows the age on hover when the cell is too small to carry it.
+		html += '<div class="wk-cell"' + (inside ? ' title="' + W.label(days) + ", " + date.format("ddd D MMM YYYY") + (isDue ? ", due date" : "") + '"' : "") + '><span class="wk-num" aria-hidden="true">' + date.date() + "</span>";
 		if (weekStart) {
-			html += '<span class="wk-tag" aria-hidden="true">' + (isDue ? "Due" : W.label(days)) + "</span>";
+			// "22+0", or just the week ("22") when the fitted cells are small.
+			html += '<span class="wk-tag" aria-hidden="true"><span class="wk-l">' + (isDue ? "Due" : W.label(days)) + '</span><span class="wk-s">' + W.weekOf(days) + "</span></span>";
 		}
 		html += '<span class="wk-sr">' + name.join(", ") + "</span></div></td>";
 		return html;
@@ -220,8 +234,10 @@
 		var id = "wkM" + number;
 		var html = "";
 		if (own) {
-			html += '<section class="wk-mon' + (number === focusMonth ? " is-focus-month" : "") + '" data-wk-month="' + first.format("YYYY-MM") + '" aria-labelledby="' + id + '">';
-			html += '<h3 class="wk-mon-title" id="' + id + '">' + first.format("MMMM YYYY") + "</h3>";
+			// data-wk-rows: how many weeks the grid has, for fitting the months to the window.
+			html += '<section class="wk-mon' + (number === focusMonth ? " is-focus-month" : "") + '" data-wk-month="' + first.format("YYYY-MM") + '" data-wk-rows="' + Math.ceil((lead + total) / 7) + '" aria-labelledby="' + id + '">';
+			// "October 2026", shown as "Oct 2026" when the months are narrow.
+			html += '<h3 class="wk-mon-title" id="' + id + '"><span class="wk-mon-l">' + first.format("MMMM YYYY") + '</span><span class="wk-mon-s" aria-hidden="true">' + first.format("MMM YYYY") + "</span></h3>";
 		}
 		html += '<table class="wk-grid" aria-labelledby="' + (own ? id : "wkMonth") + '"><thead><tr>' + WEEKDAY_HEAD + "</tr></thead><tbody><tr>";
 		var cell = 0;
@@ -241,10 +257,20 @@
 		return own ? html + "</section>" : html;
 	}
 
-	function drawInfo(p) {
+	// "Tue 20 Oct 2026": the one-line summary above the fitted months uses short dates.
+	function mediumDate(date) {
+		return date.format("ddd D MMM YYYY");
+	}
+
+	// The facts as list items. In Whole pregnancy they sit on one line after
+	// the week; the week's dates are optional there and drop out when keeping
+	// them would wrap the line (see fitInfo).
+	function drawInfo(p, mode) {
+		var all = mode === "pregnancy";
+		var dateText = all ? mediumDate : longDate;
 		var focusWeek = W.weekOf(p.focusDays);
 		var inside = p.focusDays >= 0 && p.focusDays <= LAST_DAY;
-		var date = longDate(p.focus) + (p.focusIsToday ? ", today" : "");
+		var date = dateText(p.focus) + (p.focusIsToday ? ", today" : "");
 
 		if (p.focusDays < 0) {
 			weekLine.textContent = "Before the pregnancy";
@@ -255,24 +281,27 @@
 		}
 
 		var lines = [p.focusDays >= 0 ? W.label(p.focusDays) + " on " + date : date];
+		var optional = -1;
 		if (inside) {
+			optional = all ? lines.length : -1;
 			lines.push("Week " + focusWeek + " runs " + W.range(W.dateOf(p, focusWeek * 7), W.dateOf(p, focusWeek * 7 + 6), true));
 		} else if (p.focusDays < 0) {
-			lines.push("0+0 is " + longDate(p.start));
+			lines.push("0+0 is " + dateText(p.start));
 		}
 		var toDue = W.TERM_DAYS - p.focusDays;
-		lines.push("Due " + longDate(p.edd) + (toDue > 0 ? ", in " + spanWords(toDue) : toDue < 0 ? ", " + spanWords(-toDue) + " earlier" : ""));
+		lines.push("Due " + (all ? W.shortDate(p.edd, true) : longDate(p.edd)) + (toDue > 0 ? ", in " + spanWords(toDue) : toDue < 0 ? ", " + spanWords(-toDue) + " earlier" : ""));
 		facts.innerHTML = lines
-			.map(function (line) {
-				return "<li>" + line + "</li>";
+			.map(function (line, i) {
+				return "<li" + (i === optional ? ' class="wk-opt"' : "") + ">" + line + "</li>";
 			})
 			.join("");
 
 		var keys = [
-			['<span class="wk-key is-t1"></span>', "First trimester, 0+0 to 13+6"],
-			['<span class="wk-key is-t2"></span>', "Second trimester, 14+0 to 27+6"],
-			['<span class="wk-key is-t3"></span>', "Third trimester, 28+0 to 42+6"],
-			['<span class="wk-key wk-key-text">22+0</span>', "First day of a week"],
+			['<span class="wk-key is-t1"></span>', 'First trimester, <span class="wk-nowrap">0+0 to 13+6</span>'],
+			['<span class="wk-key is-t2"></span>', 'Second trimester, <span class="wk-nowrap">14+0 to 27+6</span>'],
+			['<span class="wk-key is-t3"></span>', 'Third trimester, <span class="wk-nowrap">28+0 to 42+6</span>'],
+			// The key matches how the fitted cells label a week start: "22+0", "22", or a bold date only.
+			['<span class="wk-key wk-key-text"><span class="wk-l">22+0</span><span class="wk-s">22</span><span class="wk-x">15</span></span>', '<span class="wk-l">First day of a week</span><span class="wk-s">First day of <span class="wk-nowrap">week 22</span></span><span class="wk-x">First day of a week, in bold</span>'],
 		];
 		if (p.focusIsToday) {
 			keys.push(['<span class="wk-key wk-key-focus wk-key-today"></span>', "Today", ".is-focus"]);
@@ -280,10 +309,10 @@
 			keys.push(['<span class="wk-key wk-key-focus"></span>', "Calculation date", ".is-focus"]);
 			keys.push(['<span class="wk-key wk-key-today"></span>', "Today", ".is-today"]);
 		}
-		keys.push(['<span class="wk-key wk-key-due"></span>', "Due date, " + W.shortDate(p.edd, true), ".is-due"]);
+		keys.push(['<span class="wk-key wk-key-due"></span>', 'Due date, <span class="wk-nowrap">' + W.shortDate(p.edd, true) + "</span>", ".is-due"]);
 		legend.innerHTML = keys
 			.map(function (key) {
-				return "<li" + (key[2] ? ' data-wk-shows="' + key[2] + '"' : "") + '><span class="wk-key-box" aria-hidden="true">' + key[0] + "</span>" + key[1] + "</li>";
+				return "<li" + (key[2] ? ' data-wk-shows="' + key[2] + '"' : "") + '><span class="wk-key-box" aria-hidden="true">' + key[0] + "</span><span>" + key[1] + "</span></li>";
 			})
 			.join("");
 	}
@@ -315,6 +344,10 @@
 		setDisabled(nextBtn, shown >= bounds.max);
 		months.className = "wk-months-list is-single";
 		months.innerHTML = monthHtml(p, shown, false);
+		// Whole pregnancy moves the key into the grid of months; put it back beside the month.
+		if (legend.parentNode !== ready) {
+			ready.insertBefore(legend, cal);
+		}
 		back.hidden = view === null;
 		if (homeMonth() !== focusMonth) {
 			// The focus is too far away to show, so "back" is the nearest month of the pregnancy.
@@ -337,19 +370,25 @@
 		}
 		months.className = "wk-months-list is-all";
 		months.innerHTML = html;
-		backText.textContent = p.focusIsToday ? "Go to today" : "Go to " + W.shortDate(p.focus);
-		back.title = p.focusIsToday ? "Scroll to this month" : "Scroll to the month of the calculation date";
-		showGoTo();
+		if (phone.matches) {
+			// A phone scrolls, as on the live page: the key goes above the months
+			// and "Go to" brings the focus month into view.
+			if (legend.parentNode !== ready) {
+				ready.insertBefore(legend, cal);
+			}
+			backText.textContent = p.focusIsToday ? "Go to today" : "Go to " + W.shortDate(p.focus);
+			back.title = p.focusIsToday ? "Scroll to this month" : "Scroll to the month of the calculation date";
+			back.hidden = !months.querySelector(".is-focus-month");
+		} else {
+			// The key takes the slot after the last month, which a row of months usually leaves empty.
+			months.appendChild(legend);
+			// Everything is on screen at once, so there is nothing to go to.
+			back.hidden = true;
+		}
 		// A focus or today far from the pregnancy is not drawn, so its key goes too.
 		Array.prototype.forEach.call(legend.querySelectorAll("[data-wk-shows]"), function (item) {
 			item.hidden = !months.querySelector(item.getAttribute("data-wk-shows"));
 		});
-	}
-
-	// "Go to" scrolls the page to the focus month. It stays put whenever that
-	// month is drawn: a button that came and went with scrolling was confusing.
-	function showGoTo() {
-		back.hidden = !months.querySelector(".is-focus-month");
 	}
 
 	function syncControls(mode) {
@@ -361,7 +400,7 @@
 
 	// Everything a redraw depends on. Midnight moves today, so it is in here.
 	function drawKey(mode, p) {
-		return [mode, view, p ? [iso(p.start), iso(p.focus), p.focusIsToday, iso(p.today)].join() : "empty"].join("|");
+		return [mode, view, phone.matches, p ? [iso(p.start), iso(p.focus), p.focusIsToday, iso(p.today)].join() : "empty"].join("|");
 	}
 
 	function render(opening) {
@@ -376,6 +415,7 @@
 			root.removeAttribute("data-wk-week");
 			bounds = null;
 			drawn = null;
+			unfit();
 			return;
 		}
 		var p = W.pregnancy(values);
@@ -396,11 +436,19 @@
 			empty.hidden = true;
 			ready.hidden = false;
 			ready.className = "wk-ready " + (mode === "month" ? "is-month" : "is-all");
-			drawInfo(p);
+			// A phone gets the live page's three full lines of facts.
+			drawInfo(p, phone.matches ? "month" : mode);
 			if (mode === "month") {
+				unfit();
 				drawMonth(p);
-			} else {
+			} else if (phone.matches) {
+				unfit();
 				drawAll(p);
+				fitTags();
+			} else {
+				root.classList.add("is-fit");
+				drawAll(p);
+				fit();
 			}
 		} else {
 			root.setAttribute("data-wk-state", "empty");
@@ -409,6 +457,7 @@
 			ready.hidden = true;
 			back.hidden = true;
 			bounds = null;
+			unfit();
 		}
 		// drawMonth can settle the view, so the key is taken after drawing.
 		drawn = drawKey(mode, p);
@@ -463,11 +512,270 @@
 		}, 30);
 	}
 
-	function scrollToFocus() {
-		var target = months.querySelector(".is-focus-month");
-		if (target) {
-			target.scrollIntoView({ block: "center", behavior: reduceMotion.matches ? "auto" : "smooth" });
+	// Brings the whole calendar into view. Where the page fits the window this
+	// does nothing; on a phone it lines the calendar up with the top of the screen.
+	function scrollToCalendar() {
+		root.scrollIntoView({ block: "start", behavior: reduceMotion.matches ? "auto" : "smooth" });
+	}
+
+	// ---- Fitting Whole pregnancy to the window ----
+
+	// Cell sizes, from roomy to tight: the smallest cell each needs, and the
+	// heights of the month heading and the weekday row at that size (the CSS
+	// for [data-wk-fit] uses the same numbers). "lg" and "md" label week starts
+	// "22+0", "sm" just "22", and "xs" has room for the date alone, so a week
+	// start is only bold there and its age is in the cell's title.
+	// `fitW` and `fitH` are a comfortable cell at that size: between two
+	// arrangements of the same size, the one closer to it in its tighter
+	// direction wins.
+	var FITS = [
+		{ name: "lg", minW: 34, minH: 30, fitW: 40, fitH: 32, title: 22, head: 16 },
+		{ name: "md", minW: 24, minH: 25, fitW: 28, fitH: 30, title: 19, head: 14 },
+		{ name: "sm", minW: 13, minH: 19, fitW: 18, fitH: 22, title: 17, head: 13 },
+		{ name: "xs", minW: 13, minH: 14, fitW: 18, fitH: 16, title: 17, head: 13 },
+	];
+	// No taller than this, or this many times the width: past that, cells stop looking like days.
+	var MAX_CELL = 46;
+	var MAX_TALL = 1.8;
+	var fitFrame = 0;
+
+	// Distance from the top of the page, leaving out transforms (the opening animation moves the calendar).
+	function docTop(element) {
+		var top = 0;
+		for (; element; element = element.offsetParent) {
+			top += element.offsetTop;
 		}
+		return top;
+	}
+
+	// The key's height at `width`: a column of entries when it sits in the
+	// slot of one month, a wrapping row when it has more room.
+	function keyHeight(width, size, row) {
+		var was = root.getAttribute("data-wk-fit");
+		// The key's labels follow the cell size, so measure it at the size being tried.
+		root.setAttribute("data-wk-fit", size.name);
+		legend.classList.toggle("is-row", row);
+		legend.style.width = width + "px";
+		legend.style.paddingTop = "0";
+		var height = legend.offsetHeight;
+		legend.style.width = "";
+		legend.style.paddingTop = "";
+		if (was) {
+			root.setAttribute("data-wk-fit", was);
+		} else {
+			root.removeAttribute("data-wk-fit");
+		}
+		return height;
+	}
+
+	// The best arrangement of the months (each `rows[i]` weeks long) and the
+	// key in a box `width` wide with `height` for the months: the biggest
+	// cell size that fits, then the biggest cells, then the fewest rows of
+	// months. Null when nothing fits. `keyAt(width)` gives the key's height.
+	function plan(rows, width, height, keyAt) {
+		var n = rows.length;
+		var wide = width >= 600;
+		var gapY = wide ? 8 : 6;
+		var best = null;
+		for (var cols = n; cols >= 1; cols--) {
+			// Seven or more months across leave narrow days, so they sit closer together.
+			var gapX = !wide ? 6 : cols >= 7 ? 8 : 16;
+			var monthW = (width - (cols - 1) * gapX) / cols;
+			var space = (monthW - 16) / 7 >= 20 ? 2 : 1;
+			var cellW = (monthW - 8 * space) / 7;
+			var lines = Math.ceil(n / cols);
+			var weeks = [];
+			for (var r = 0; r < lines; r++) {
+				weeks.push(Math.max.apply(null, rows.slice(r * cols, (r + 1) * cols)));
+			}
+			var free = lines * cols - n;
+			// The key goes in the empty slots after the last month, or in a row of its own below the months.
+			var places = free ? [free, 0] : [0];
+			for (var k = 0; k < places.length; k++) {
+				var span = places[k];
+				var keyW = span ? span * monthW + (span - 1) * gapX : width;
+				for (var i = 0; i < FITS.length; i++) {
+					var keyH = keyAt(keyW, FITS[i], span !== 1);
+					var cellH = cellHeight(FITS[i], weeks, space, gapY, height, span ? 0 : gapY + keyH, span ? keyH : 0);
+					cellH = Math.floor(Math.min(cellH, cellW * MAX_TALL, MAX_CELL) * 4) / 4;
+					if (cellW < FITS[i].minW || cellH < FITS[i].minH) {
+						continue;
+					}
+					var layout = { cols: cols, weeks: weeks, size: FITS[i], rank: i, monthW: monthW, cellW: cellW, cellH: cellH, space: space, gapX: gapX, gapY: gapY, keySpan: span, keyRow: span !== 1, score: Math.min(cellW / FITS[i].fitW, cellH / FITS[i].fitH) };
+					if (!best || layout.rank < best.rank || (layout.rank === best.rank && layout.score > best.score + 0.02)) {
+						best = layout;
+					}
+					break;
+				}
+			}
+		}
+		return best;
+	}
+
+	// The tallest cell for which rows of months (`weeks[r]` weeks each) fit in
+	// `height`. `extra` is height taken below them (the key in its own row);
+	// `beside` is the key's height when it shares the last row instead.
+	function cellHeight(size, weeks, space, gapY, height, extra, beside) {
+		var fixed = (weeks.length - 1) * gapY + extra;
+		var count = 0;
+		weeks.forEach(function (w) {
+			// Heading, then a table: the weekday row and the weeks, with spacing around every row.
+			fixed += size.title + size.head + space * (w + 2);
+			count += w;
+		});
+		var cellH = (height - fixed) / count;
+		var last = weeks[weeks.length - 1];
+		// The key sits under a gap the height of a month heading, so it lines up with the weekdays.
+		var keyRowH = size.title + beside;
+		if (beside && size.title + size.head + space * (last + 2) + last * (cellH + space) < keyRowH) {
+			// The key is taller than the months beside it, so it sets that row's height.
+			fixed += keyRowH - (size.title + size.head + space * (last + 2));
+			count -= last;
+			cellH = count ? (height - fixed - last * space) / count : height >= fixed ? MAX_CELL : 0;
+		}
+		return cellH;
+	}
+
+	function apply(layout) {
+		var style = root.style;
+		style.setProperty("--wk-cols", layout.cols);
+		style.setProperty("--wk-cell-h", layout.cellH + "px");
+		style.setProperty("--wk-space", layout.space + "px");
+		style.setProperty("--wk-gap-x", layout.gapX + "px");
+		style.setProperty("--wk-gap-y", layout.gapY + "px");
+		style.setProperty("--wk-title-h", layout.size.title + "px");
+		style.setProperty("--wk-head-h", layout.size.head + "px");
+		root.setAttribute("data-wk-fit", layout.size.name);
+		// "Oct 2026" and one-letter weekdays when the months are narrow.
+		root.classList.toggle("is-narrow-month", layout.monthW < 150);
+		root.classList.toggle("is-narrow-day", layout.cellW < 19);
+		// Two lines in a short cell: the date drops to 11 px.
+		root.classList.toggle("is-short-day", layout.cellH < 22);
+		legend.classList.toggle("is-row", layout.keyRow);
+		legend.style.gridColumn = layout.keySpan ? "span " + layout.keySpan : "1 / -1";
+	}
+
+	var FIT_PROPS = ["--wk-cols", "--wk-cell-h", "--wk-space", "--wk-gap-x", "--wk-gap-y", "--wk-title-h", "--wk-head-h"];
+
+	function unfit() {
+		root.classList.remove("is-fit", "is-narrow-month", "is-narrow-day", "is-short-day");
+		root.removeAttribute("data-wk-fit");
+		legend.classList.remove("is-row");
+		legend.style.gridColumn = "";
+		FIT_PROPS.forEach(function (name) {
+			root.style.removeProperty(name);
+		});
+	}
+
+	// Sizes the months to the room left in the window. On a desktop that is
+	// the space below the calculator, so the whole page fits. Where even the
+	// smallest cells would not fit there (a phone, where the calculator alone
+	// is most of the screen), the calendar section is sized to the window.
+	function fit() {
+		if (root.hidden || !root.classList.contains("is-fit")) {
+			return;
+		}
+		var rows = Array.prototype.map.call(months.querySelectorAll(".wk-mon"), function (month) {
+			return Number(month.getAttribute("data-wk-rows"));
+		});
+		// The week's dates stay in the summary only if they do not cost another line.
+		var optional = facts.querySelector(".wk-opt");
+		if (optional) {
+			optional.hidden = false;
+			var withIt = docTop(months);
+			optional.hidden = true;
+			optional.hidden = docTop(months) < withIt;
+		}
+		var style = getComputedStyle(root);
+		var below = parseFloat(style.paddingBottom) + parseFloat(style.borderBottomWidth);
+		var margin = parseFloat(style.marginBottom);
+		var head = docTop(months) - docTop(root);
+		var width = months.clientWidth;
+		var heights = {};
+		function keyAt(keyW, size, row) {
+			var at = Math.floor(keyW) + size.name + row;
+			if (!(at in heights)) {
+				heights[at] = keyHeight(Math.floor(keyW), size, row);
+			}
+			return heights[at];
+		}
+		var whole = true;
+		var room = window.innerHeight - docTop(months) - below - margin;
+		var layout = plan(rows, width, room, keyAt);
+		if (!layout) {
+			whole = false;
+			room = window.innerHeight - head - below;
+			layout = plan(rows, width, room, keyAt);
+		}
+		if (!layout) {
+			smallest(rows, width);
+			return;
+		}
+		apply(layout);
+		// Put right anything the plan did not foresee, such as a key taller than its row.
+		for (var tries = 0; tries < 2; tries++) {
+			var limit = whole ? window.innerHeight - margin : docTop(root) + window.innerHeight;
+			var over = docTop(root) + root.offsetHeight - limit;
+			if (over <= 0) {
+				return;
+			}
+			room -= over;
+			layout = plan(rows, width, room, keyAt);
+			if (!layout) {
+				smallest(rows, width);
+				return;
+			}
+			apply(layout);
+		}
+	}
+
+	// A window too small for even the smallest cells: keep them readable and let the page scroll.
+	function smallest(rows, width) {
+		var layout = plan(rows, width, 1e6, function (keyW, size, row) {
+			return keyHeight(Math.floor(keyW), size, row);
+		});
+		layout.cellH = FITS[FITS.length - 1].minH;
+		layout.size = FITS[FITS.length - 1];
+		apply(layout);
+	}
+
+	// On a phone the months are two across at their natural height, and days
+	// are only about 20 px wide. Where "22+0" does not fit inside a day, week
+	// starts are labelled "22" instead (the key follows, through the same "sm"
+	// size the fitted view uses). Measured, since it depends on the font.
+	function fitTags() {
+		if (root.hidden || !phone.matches || setting.get() !== "pregnancy") {
+			return;
+		}
+		root.removeAttribute("data-wk-fit");
+		var tags = months.querySelectorAll(".wk-tag");
+		for (var i = 0; i < tags.length; i++) {
+			if (tags[i].scrollWidth > tags[i].parentNode.clientWidth) {
+				root.setAttribute("data-wk-fit", "sm");
+				return;
+			}
+		}
+	}
+
+	// At most one fit a frame. Called on window resizes and whenever the
+	// calculator card changes height (an error message, the GA note).
+	function refit() {
+		if (!fitFrame) {
+			fitFrame = window.requestAnimationFrame(function () {
+				fitFrame = 0;
+				fit();
+				fitTags();
+			});
+		}
+	}
+
+	// Crossing into or out of the phone layout draws Whole pregnancy again in the other form.
+	phone.addEventListener("change", function () {
+		render(false);
+	});
+	window.addEventListener("resize", refit);
+	if (window.ResizeObserver && card) {
+		new ResizeObserver(refit).observe(card);
 	}
 
 	// ---- Browsing ----
@@ -494,11 +802,14 @@
 		step(1);
 	});
 
+	// "Back to" in This month. In Whole pregnancy only a phone shows the button,
+	// as "Go to": it scrolls the page to the focus month.
 	back.addEventListener("click", function () {
 		if (setting.get() === "pregnancy") {
-			scrollToFocus();
-			var heading = months.querySelector(".is-focus-month .wk-mon-title");
-			if (heading) {
+			var target = months.querySelector(".is-focus-month");
+			if (target) {
+				target.scrollIntoView({ block: "center", behavior: reduceMotion.matches ? "auto" : "smooth" });
+				var heading = target.querySelector(".wk-mon-title");
 				heading.setAttribute("tabindex", "-1");
 				heading.focus({ preventScroll: true });
 			}
@@ -588,7 +899,7 @@
 			scrollPending = false;
 			var heading = months.querySelector(".is-focus-month .wk-mon-title");
 			if (setting.get() === "pregnancy" && heading) {
-				scrollToFocus();
+				scrollToCalendar();
 				// Keyboard focus follows the page down, so the next Tab does not jump back up.
 				heading.setAttribute("tabindex", "-1");
 				heading.focus({ preventScroll: true });
