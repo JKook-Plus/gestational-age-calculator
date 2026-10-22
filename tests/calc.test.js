@@ -117,14 +117,14 @@ test("empty and whitespace-only input is empty, not invalid", () => {
 	assert.equal(shown(date(" 15/03/2027 ")), "15/03/2027");
 });
 
-test("shortcuts count from the local calendar day", () => {
-	const cases = { t: "10/10/2026", T: "10/10/2026", "t+0": "10/10/2026", "t+3": "13/10/2026", "w+2": "24/10/2026", "m+1": "10/11/2026", "y+1": "10/10/2027" };
+test("shortcuts count forward or back from the local calendar day", () => {
+	const cases = { t: "10/10/2026", T: "10/10/2026", "t+0": "10/10/2026", "t+3": "13/10/2026", "w+2": "24/10/2026", "m+1": "10/11/2026", "y+1": "10/10/2027", "t-1": "09/10/2026", "T-0": "10/10/2026", "w-2": "26/09/2026", "m-2": "10/08/2026", "y-1": "10/10/2025" };
 	for (const [text, expected] of Object.entries(cases)) {
 		const result = date(text);
 		assert.equal(shown(result), expected, text);
 		assert.equal(result.relative, true, text);
 	}
-	for (const text of ["today", "tomorrow", "t-3", "t + 3", "t+99999999999"]) {
+	for (const text of ["today", "tomorrow", "t - 3", "t+-3", "t--3", "t+3-1", "t + 3", "t+99999999999", "t-99999999999"]) {
 		assert.equal(shown(date(text)), "INVALID", text);
 	}
 });

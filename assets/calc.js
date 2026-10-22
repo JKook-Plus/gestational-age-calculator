@@ -106,18 +106,20 @@
 		return moment.utc(local.format("YYYY-MM-DD"), "YYYY-MM-DD", true);
 	}
 
-	// "t", "t+3", "w+3", "m+3", "y+3". Anchored so date text like "May+2"
-	// can't be misread as a shortcut.
+	// "t", "t+3", "w+3", "m+3", "y+3", and the same with "-" to count back
+	// ("t-1", "m-2"). Anchored so date text like "May+2" can't be misread as
+	// a shortcut.
 	function parseShortcut(text, today) {
 		if (/^t$/i.test(text)) {
 			return today.clone();
 		}
-		var match = /^([twmy])\+(\d+)$/i.exec(text);
+		var match = /^([twmy])([+-])(\d+)$/i.exec(text);
 		if (!match) {
 			return null;
 		}
 		var unit = { t: "days", w: "weeks", m: "months", y: "years" }[match[1].toLowerCase()];
-		return today.clone().add(Number(match[2]), unit);
+		var amount = Number(match[3]);
+		return match[2] === "+" ? today.clone().add(amount, unit) : today.clone().subtract(amount, unit);
 	}
 
 	// Picks the year for a date typed without one.
