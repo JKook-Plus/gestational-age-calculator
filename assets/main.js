@@ -16,8 +16,6 @@
 		};
 		var KEYS = ["edd", "date", "ga"];
 
-		// How long typing has to pause before the calculator runs.
-		var INPUT_DELAY_MS = 50;
 		// How long a copy button says "Copied".
 		var COPIED_MS = 1200;
 
@@ -35,7 +33,6 @@
 		var written = null;
 		// The field the user is typing in. The calculator never overwrites it.
 		var editing = null;
-		var inputTimer = null;
 
 		function box(key) {
 			return $('.field[data-field="' + key + '"]');
@@ -288,7 +285,6 @@
 				.on("changeDate", function () {
 					// A day was picked from the calendar.
 					editing = null;
-					clearTimeout(inputTimer);
 					recalculate(key);
 					broadcast();
 				})
@@ -322,12 +318,8 @@
 			FIELDS[key].input
 				.on("input", function () {
 					editing = key;
-					clearTimeout(inputTimer);
-					inputTimer = setTimeout(function () {
-						inputTimer = null;
-						recalculate(key);
-						broadcast();
-					}, INPUT_DELAY_MS);
+					recalculate(key);
+					broadcast();
 				})
 				.on("blur", function () {
 					if (editing !== key) {
@@ -335,10 +327,7 @@
 					}
 					// Leaving a field ends the edit, so a half-typed output goes back to the result.
 					editing = null;
-					var pending = inputTimer !== null;
-					clearTimeout(inputTimer);
-					inputTimer = null;
-					recalculate(pending ? key : null);
+					recalculate(null);
 					broadcast();
 				});
 		});

@@ -89,9 +89,6 @@
 	})("weekCalendar", ["off", "month", "pregnancy"]);
 	// 42+6, the last day the calendar counts as inside the pregnancy.
 	var LAST_DAY = W.LAST_DAY;
-	// While a field is being typed in, the calendar waits this long after the
-	// last change, so half-typed dates do not flick it between states.
-	var TYPING_PAUSE_MS = 300;
 	var HINTS = {
 		off: "No calendar under the calculator.",
 		month: "One month, opening on the calculation date or today. Arrows move between months.",
@@ -136,7 +133,8 @@
 	var scrollPending = false;
 	// What the calendar last drew. A redraw that would draw the same is skipped.
 	var drawn = null;
-	var typingTimer = null;
+	// A redraw waiting for the next frame while a field is typed in.
+	var typingFrame = 0;
 	// The calculator's three fields.
 	var fields = ["EDDDatepicker", "dateFromDatepicker", "gestationalAge"].map($);
 
@@ -406,8 +404,8 @@
 	}
 
 	function render(opening) {
-		clearTimeout(typingTimer);
-		typingTimer = null;
+		cancelAnimationFrame(typingFrame);
+		typingFrame = 0;
 		var mode = setting.get();
 		syncControls(mode);
 		root.setAttribute("data-wk-mode", mode);
@@ -548,23 +546,37 @@
 	}
 
 	// The key's height at `width`: a column of entries when it sits in the
-	// slot of one month, a wrapping row when it has more room.
+	// slot of one month, a wrapping row when it has more room. Measured on a
+	// hidden copy beside the calendar: trying a cell size on the calendar
+	// itself restyles and lays out every month, which made each fit take
+	// about 200 ms.
+	var probe = null;
 	function keyHeight(width, size, row) {
-		var was = root.getAttribute("data-wk-fit");
-		// The key's labels follow the cell size, so measure it at the size being tried.
-		root.setAttribute("data-wk-fit", size.name);
-		legend.classList.toggle("is-row", row);
-		legend.style.width = width + "px";
-		legend.style.paddingTop = "0";
-		var height = legend.offsetHeight;
-		legend.style.width = "";
-		legend.style.paddingTop = "";
-		if (was) {
-			root.setAttribute("data-wk-fit", was);
-		} else {
-			root.removeAttribute("data-wk-fit");
+		if (!probe) {
+			probe = document.createElement("div");
+			probe.className = "wk is-fit";
+			probe.setAttribute("aria-hidden", "true");
+			probe.style.cssText = "position:absolute;top:0;left:0;margin:0;padding:0;visibility:hidden;pointer-events:none;contain:layout style";
+			var copy = legend.cloneNode(true);
+			copy.removeAttribute("id");
+			copy.style.cssText = "padding-top:0";
+			probe.appendChild(copy);
+			root.parentNode.insertBefore(probe, root);
 		}
-		return height;
+		var key = probe.firstChild;
+		// The key's labels follow the cell size, so measure it at the size being tried.
+		probe.setAttribute("data-wk-fit", size.name);
+		key.classList.toggle("is-row", row);
+		key.style.width = width + "px";
+		return key.offsetHeight;
+	}
+
+	// The copy holds the key as it was when the fit started.
+	function dropProbe() {
+		if (probe) {
+			probe.remove();
+			probe = null;
+		}
 	}
 
 	// The best arrangement of the months (each `rows[i]` weeks long) and the
@@ -695,6 +707,7 @@
 		}
 		back.hidden = true;
 		var whole = place();
+		dropProbe();
 		back.hidden = whole || !months.querySelector(".is-focus-month");
 	}
 
@@ -886,16 +899,31 @@
 			focusKey = key;
 			view = null;
 		}
-		// Leaving the field fires another event, which draws straight away.
-		if (fields.indexOf(document.activeElement) !== -1) {
-			clearTimeout(typingTimer);
-			typingTimer = setTimeout(function () {
-				render(false);
-			}, TYPING_PAUSE_MS);
-		} else {
+		if (fields.indexOf(document.activeElement) === -1) {
 			render(false);
+			return;
 		}
+		// While a field is typed in, the calculator's answer is painted first
+		// and the calendar follows a frame later. On a slow phone a keystroke
+		// then never waits for every month to be rebuilt, and keys pressed
+		// during a rebuild share the next one. Leaving the field fires another
+		// event, which draws straight away.
+		cancelAnimationFrame(typingFrame);
+		typingFrame = requestAnimationFrame(function () {
+			typingFrame = requestAnimationFrame(drawTyped);
+		});
 	});
+
+	function drawTyped() {
+		typingFrame = 0;
+		// A date typed halfway ("18/02/" on the way to "18/02/2027") gives no
+		// pregnancy. The calendar keeps showing the last one until the field
+		// is left, instead of flashing its empty state at every keystroke.
+		if (!W.pregnancy(values) && root.getAttribute("data-wk-state") === "ready") {
+			return;
+		}
+		render(false);
+	}
 
 	// ---- The setting and its dialog ----
 
