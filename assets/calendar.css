@@ -363,13 +363,15 @@
     color: var(--bs-secondary-color);
 }
 
+/* Days are square: the cell's height follows its width */
 .wk-day {
     position: relative;
-    height: 2.75rem;
 }
 
-.is-all .wk-day {
-    height: 2.375rem;
+.wk-day::before {
+    content: "";
+    display: block;
+    padding-top: 100%;
 }
 
 .wk-cell {
@@ -611,7 +613,11 @@
 /* The months, and the key in the slot after the last one */
 .is-fit .wk-months-list.is-all {
     flex: 1 1 100%;
-    grid-template-columns: repeat(var(--wk-cols, 6), minmax(0, 1fr));
+    grid-template-columns: repeat(var(--wk-cols, 6), var(--wk-mon-w, minmax(0, 1fr)));
+    justify-content: center;
+    /* The months have fixed widths; without this the list would keep the
+       last fit's width when the window narrows, and calendar.js measures it */
+    min-width: 0;
     gap: var(--wk-gap-y, 8px) var(--wk-gap-x, 16px);
     margin-top: 12px;
 }
@@ -661,8 +667,13 @@
     display: inline;
 }
 
+/* calendar.js sizes each month to fit its square days, so the height is set outright */
 .is-fit .is-all .wk-day {
     height: var(--wk-cell-h, 2rem);
+}
+
+.is-fit .is-all .wk-day::before {
+    content: none;
 }
 
 .is-fit .wk-cell {
@@ -806,29 +817,29 @@
 
 /* Phones and the narrow layout of the page: 44 px tap targets */
 @media (max-width: 767.98px) {
-    /* Whole pregnancy on a phone: laid out like the live page, two months across,
-       and the page scrolls. Not fitted to the window (calendar.js leaves .is-fit off). */
+    /* Whole pregnancy on a phone: one month across, as big as This month, and
+       the page scrolls. Two across would leave square days too small for the
+       date and its week. Not fitted to the window (calendar.js leaves .is-fit off). */
     .wk-months-list.is-all {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 1rem 10px;
+        grid-template-columns: minmax(0, 25rem);
+        justify-content: center;
+        gap: 1.25rem;
     }
 
-    .is-all .wk-day {
-        height: 2.25rem;
-    }
-
-    /* Days are about 20 px wide here, so the week-start tag drops its letter spacing */
-    .is-all .wk-tag {
-        letter-spacing: 0;
-    }
-
-    /* Narrow days label a week start "22"; the date keeps the live page's size */
+    /* Days too narrow for "22+0" label a week start "22"; the date keeps its size */
     .wk:not(.is-fit)[data-wk-fit="sm"] .wk-num {
         font-size: 0.875rem;
     }
 
     .wk:not(.is-fit)[data-wk-fit="sm"] .wk-mon-title {
         font-size: 0.875rem;
+    }
+
+    /* Days are square, so one month stays at the computer's width on a tablet */
+    .is-month .wk-cal {
+        justify-self: center;
+        width: 100%;
+        max-width: 25rem;
     }
 
     /* One month on a phone: the key after the month, not between the facts and the month */
@@ -937,7 +948,11 @@
     }
 
     .is-fit .is-all .wk-day {
-        height: 1.9rem;
+        height: auto;
+    }
+
+    .is-fit .is-all .wk-day::before {
+        content: "";
     }
 
     /* The key in a row of its own, and the labels at their full size */
