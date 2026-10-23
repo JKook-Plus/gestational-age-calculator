@@ -135,6 +135,10 @@
 	var drawn = null;
 	// A redraw waiting for the next frame while a field is typed in.
 	var typingFrame = 0;
+	// Text typed halfway keeps the last calendar until typing pauses this
+	// long. Valid values draw at once; only the in-between states wait.
+	var HOLD_MS = 300;
+	var holdTimer = null;
 	// The calculator's three fields.
 	var fields = ["EDDDatepicker", "dateFromDatepicker", "gestationalAge"].map($);
 
@@ -406,6 +410,8 @@
 	function render(opening) {
 		cancelAnimationFrame(typingFrame);
 		typingFrame = 0;
+		clearTimeout(holdTimer);
+		holdTimer = null;
 		var mode = setting.get();
 		syncControls(mode);
 		root.setAttribute("data-wk-mode", mode);
@@ -899,7 +905,7 @@
 			focusKey = key;
 			view = null;
 		}
-		if (fields.indexOf(document.activeElement) === -1) {
+		if (!typing()) {
 			render(false);
 			return;
 		}
@@ -914,12 +920,40 @@
 		});
 	});
 
+	// A field of the calculator has the keyboard. Switching to another
+	// window, or to the Picture-in-Picture copy, leaves the field focused
+	// but fires its blur, and that event must draw straight away.
+	function typing() {
+		return fields.indexOf(document.activeElement) !== -1 && document.hasFocus();
+	}
+
+	// Leaving a field ends the typing, including a switch to another window,
+	// which leaves the field focused and so sends no further event when the
+	// user later clicks away. focusout comes after the calculator's own blur
+	// handler, so this draws its final values. Nothing new to draw is
+	// skipped inside render().
+	fields.forEach(function (field) {
+		field.addEventListener("focusout", function () {
+			render(false);
+		});
+	});
+
 	function drawTyped() {
 		typingFrame = 0;
-		// A date typed halfway ("18/02/" on the way to "18/02/2027") gives no
-		// pregnancy. The calendar keeps showing the last one until the field
-		// is left, instead of flashing its empty state at every keystroke.
-		if (!W.pregnancy(values) && root.getAttribute("data-wk-state") === "ready") {
+		// Text typed halfway ("18/02/" on the way to "18/02/2027") keeps the
+		// last calendar until typing pauses, instead of flashing the empty
+		// state or jumping to today at every keystroke. The calculator marks
+		// text it cannot read with is-invalid. Waiting for the pause, not for
+		// the field to be left, keeps a click that leaves the field from
+		// landing on a page that is changing height under it. An emptied
+		// field is held too: an empty calculation date means today.
+		var field = document.activeElement;
+		var unread = field.classList.contains("is-invalid") || (field.value || "").trim() === "";
+		if (typing() && (unread || !W.pregnancy(values)) && root.getAttribute("data-wk-state") === "ready") {
+			clearTimeout(holdTimer);
+			holdTimer = setTimeout(function () {
+				render(false);
+			}, HOLD_MS);
 			return;
 		}
 		render(false);
