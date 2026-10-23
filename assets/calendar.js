@@ -8,12 +8,12 @@
  * from 0+0 to 42+6).
  *
  * On a computer Whole pregnancy is sized to the window: the months are laid
- * out in as few rows as the space allows and the day cells take the height
+ * out in as few rows as the space allows and the (square) days take the room
  * left below the calculator, measured live. Nothing inside scrolls. Where
  * even that cannot fit (a short window), the calendar section is sized to the
  * window instead, or failing that the page scrolls and "Go to" comes back.
- * On a phone it is laid out like the live page, two months across, and the
- * page scrolls: fitting it all into one screen there made the days too small.
+ * On a phone it is one month across, as big as This month, and the page
+ * scrolls: two across left square days too small for the date and its week.
  *
  * Browsing to another month is local view state. A change to the focus date
  * or the due date snaps the view back to the focus; a redraw that only moves
@@ -522,23 +522,20 @@
 
 	// ---- Fitting Whole pregnancy to the window ----
 
-	// Cell sizes, from roomy to tight: the smallest cell each needs, and the
-	// heights of the month heading and the weekday row at that size (the CSS
-	// for [data-wk-fit] uses the same numbers). "lg" and "md" label week starts
-	// "22+0", "sm" just "22", and "xs" has room for the date alone, so a week
-	// start is only bold there and its age is in the cell's title.
-	// `fitW` and `fitH` are a comfortable cell at that size: between two
-	// arrangements of the same size, the one closer to it in its tighter
-	// direction wins.
+	// Cell sizes, from roomy to tight: the smallest side of the (square) day
+	// each needs, and the heights of the month heading and the weekday row at
+	// that size (the CSS for [data-wk-fit] uses the same numbers). "lg" and
+	// "md" label week starts "22+0", "sm" just "22", and "xs" has room for the
+	// date alone, so a week start is only bold there and its age is in the
+	// cell's title.
 	var FITS = [
-		{ name: "lg", minW: 34, minH: 30, fitW: 40, fitH: 32, title: 22, head: 16 },
-		{ name: "md", minW: 24, minH: 25, fitW: 28, fitH: 30, title: 19, head: 14 },
-		{ name: "sm", minW: 13, minH: 19, fitW: 18, fitH: 22, title: 17, head: 13 },
-		{ name: "xs", minW: 13, minH: 14, fitW: 18, fitH: 16, title: 17, head: 13 },
+		{ name: "lg", min: 34, title: 22, head: 16 },
+		{ name: "md", min: 25, title: 19, head: 14 },
+		{ name: "sm", min: 19, title: 17, head: 13 },
+		{ name: "xs", min: 13, title: 17, head: 13 },
 	];
-	// No taller than this, or this many times the width: past that, cells stop looking like days.
+	// Days are square, and no bigger than this.
 	var MAX_CELL = 46;
-	var MAX_TALL = 1.8;
 	var fitFrame = 0;
 
 	// Distance from the top of the page, leaving out transforms (the opening animation moves the calendar).
@@ -572,8 +569,11 @@
 
 	// The best arrangement of the months (each `rows[i]` weeks long) and the
 	// key in a box `width` wide with `height` for the months: the biggest
-	// cell size that fits, then the biggest cells, then the fewest rows of
-	// months. Null when nothing fits. `keyAt(width)` gives the key's height.
+	// cell size that fits, then the biggest days, then the fewest rows of
+	// months. Days are square, so a month is often narrower than its share
+	// of the width; the room left over widens the gaps between months, up
+	// to three times their usual size. Null when nothing fits.
+	// `keyAt(width)` gives the key's height.
 	function plan(rows, width, height, keyAt) {
 		var n = rows.length;
 		var wide = width >= 600;
@@ -584,7 +584,7 @@
 			var gapX = !wide ? 6 : cols >= 7 ? 8 : 16;
 			var monthW = (width - (cols - 1) * gapX) / cols;
 			var space = (monthW - 16) / 7 >= 20 ? 2 : 1;
-			var cellW = (monthW - 8 * space) / 7;
+			var widest = (monthW - 8 * space) / 7;
 			var lines = Math.ceil(n / cols);
 			var weeks = [];
 			for (var r = 0; r < lines; r++) {
@@ -595,16 +595,20 @@
 			var places = free ? [free, 0] : [0];
 			for (var k = 0; k < places.length; k++) {
 				var span = places[k];
-				var keyW = span ? span * monthW + (span - 1) * gapX : width;
 				for (var i = 0; i < FITS.length; i++) {
-					var keyH = keyAt(keyW, FITS[i], span !== 1);
-					var cellH = cellHeight(FITS[i], weeks, space, gapY, height, span ? 0 : gapY + keyH, span ? keyH : 0);
-					cellH = Math.floor(Math.min(cellH, cellW * MAX_TALL, MAX_CELL) * 4) / 4;
-					if (cellW < FITS[i].minW || cellH < FITS[i].minH) {
+					var side = squareSide(FITS[i], weeks, space, gapY, height, span, span ? span * monthW + (span - 1) * gapX : width, keyAt, widest);
+					// A key beside the months gets narrower with them, and may then need more height.
+					var w = 7 * side + 8 * space;
+					if (span) {
+						side = Math.min(side, squareSide(FITS[i], weeks, space, gapY, height, span, span * w + (span - 1) * gapX, keyAt, widest));
+						w = 7 * side + 8 * space;
+					}
+					if (side < FITS[i].min) {
 						continue;
 					}
-					var layout = { cols: cols, weeks: weeks, size: FITS[i], rank: i, monthW: monthW, cellW: cellW, cellH: cellH, space: space, gapX: gapX, gapY: gapY, keySpan: span, keyRow: span !== 1, score: Math.min(cellW / FITS[i].fitW, cellH / FITS[i].fitH) };
-					if (!best || layout.rank < best.rank || (layout.rank === best.rank && layout.score > best.score + 0.02)) {
+					var spread = cols > 1 ? Math.min(2 * gapX, (width - cols * w - (cols - 1) * gapX) / (cols - 1)) : 0;
+					var layout = { cols: cols, weeks: weeks, size: FITS[i], rank: i, monthW: w, side: side, space: space, gapX: gapX + Math.max(0, Math.floor(spread)), gapY: gapY, keySpan: span, keyRow: span !== 1 };
+					if (!best || layout.rank < best.rank || (layout.rank === best.rank && layout.side > best.side + 0.5)) {
 						best = layout;
 					}
 					break;
@@ -612,6 +616,15 @@
 			}
 		}
 		return best;
+	}
+
+	// The biggest square day at `size` for which the months and the key (in
+	// `span` slots, or a row of its own when 0, `keyW` wide) fit in `height`,
+	// and no wider than `widest`. In quarter pixels.
+	function squareSide(size, weeks, space, gapY, height, span, keyW, keyAt, widest) {
+		var keyH = keyAt(keyW, size, span !== 1);
+		var cellH = cellHeight(size, weeks, space, gapY, height, span ? 0 : gapY + keyH, span ? keyH : 0);
+		return Math.floor(Math.min(cellH, widest, MAX_CELL) * 4) / 4;
 	}
 
 	// The tallest cell for which rows of months (`weeks[r]` weeks each) fit in
@@ -641,7 +654,8 @@
 	function apply(layout) {
 		var style = root.style;
 		style.setProperty("--wk-cols", layout.cols);
-		style.setProperty("--wk-cell-h", layout.cellH + "px");
+		style.setProperty("--wk-cell-h", layout.side + "px");
+		style.setProperty("--wk-mon-w", layout.monthW + "px");
 		style.setProperty("--wk-space", layout.space + "px");
 		style.setProperty("--wk-gap-x", layout.gapX + "px");
 		style.setProperty("--wk-gap-y", layout.gapY + "px");
@@ -650,15 +664,15 @@
 		root.setAttribute("data-wk-fit", layout.size.name);
 		// "Oct 2026" and one-letter weekdays when the months are narrow.
 		root.classList.toggle("is-narrow-month", layout.monthW < 150);
-		root.classList.toggle("is-narrow-day", layout.cellW < 19);
+		root.classList.toggle("is-narrow-day", layout.side < 19);
 		// Two lines in a short cell: the date drops to 11 px.
-		root.classList.toggle("is-short-day", layout.cellH < 22);
+		root.classList.toggle("is-short-day", layout.side < 22);
 		legend.classList.toggle("is-row", layout.keyRow);
 		legend.classList.toggle("is-below", !layout.keySpan);
 		legend.style.gridColumn = layout.keySpan ? "span " + layout.keySpan : "1 / -1";
 	}
 
-	var FIT_PROPS = ["--wk-cols", "--wk-cell-h", "--wk-space", "--wk-gap-x", "--wk-gap-y", "--wk-title-h", "--wk-head-h"];
+	var FIT_PROPS = ["--wk-cols", "--wk-cell-h", "--wk-mon-w", "--wk-space", "--wk-gap-x", "--wk-gap-y", "--wk-title-h", "--wk-head-h"];
 
 	function unfit() {
 		root.classList.remove("is-fit", "is-narrow-month", "is-narrow-day", "is-short-day");
@@ -755,9 +769,9 @@
 		}
 	}
 
-	// On a phone the months are two across at their natural height, and days
-	// are only about 20 px wide. Where "22+0" does not fit inside a day, week
-	// starts are labelled "22" instead (the key follows, through the same "sm"
+	// On a phone the months are one across at their natural height. Where
+	// "22+0" does not fit inside a day (a very narrow phone), week starts are
+	// labelled "22" instead (the key follows, through the same "sm"
 	// size the fitted view uses). Measured, since it depends on the font.
 	function fitTags() {
 		if (root.hidden || !phone.matches || setting.get() !== "pregnancy") {
